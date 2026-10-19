@@ -1,0 +1,2058 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="description" content="第三人：替金·菲尔比做五个决定。史实线、苏联线、双面间谍线，15 个结局。">
+<title>第三人</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;900&family=Special+Elite&display=swap">
+<style>
+/* Layout: 全屏舞台；冷战谍战档案风：钢蓝夜色 + 琥珀灯光，对话框是深色玻璃，历史卡是打字机档案纸加红色印章 */
+:root{
+  color-scheme:dark;
+  --ink:#0D0F13; --slate:rgba(16,19,25,.84); --line:rgba(217,164,65,.28);
+  --paper:#E9E1CF; --paper-ink:#24201A; --dim:#A9A396; --amber:#D9A441; --amber-ink:#1A1408; --red:#B3261E; --steel:#6F8798;
+  --f-head:"Noto Serif SC","Songti SC","STSong",serif;
+  --f-type:"Special Elite","Courier New",ui-monospace,monospace;
+  --f-ui:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;
+}
+html,body{height:100%}
+body{margin:0;background:var(--ink);color:var(--paper);font-family:var(--f-head);overflow:hidden;-webkit-tap-highlight-color:transparent}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+button{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--amber);outline-offset:3px}
+
+#game{position:relative;width:100%;height:100%;overflow:hidden;user-select:none;-webkit-user-select:none;cursor:pointer}
+canvas.layer{position:absolute;inset:0;width:100%;height:100%;display:block}
+#bg,#snap{transition:filter .6s ease}
+#game.focus #bg,#game.focus #snap{filter:blur(1.8px) brightness(.85)}
+#snap{opacity:0;transition:opacity .9s ease,filter .6s ease;pointer-events:none}
+#grain{pointer-events:none;z-index:3;opacity:.5;mix-blend-mode:overlay}
+#veil{position:absolute;inset:0;background:#000;opacity:0;transition:opacity .55s ease;pointer-events:none;z-index:6}
+
+#npc{position:absolute;left:50%;bottom:0;height:min(80%,660px);aspect-ratio:300/420;transform:translateX(-50%) translateY(5%);opacity:0;transition:opacity .45s ease,transform .45s ease,filter .3s ease;z-index:2;pointer-events:none}
+#npc.on{opacity:1;transform:translateX(-50%) translateY(0)}
+#npc.listen{filter:brightness(.7)}
+#npc svg{width:100%;height:100%;display:block;overflow:visible}
+#npc .breathe{transform-origin:150px 420px;animation:breathe 4.6s ease-in-out infinite}
+@keyframes breathe{0%,100%{transform:scale(1,1)}50%{transform:scale(1.005,1.01)}}
+
+#place{position:absolute;top:calc(14px + env(safe-area-inset-top,0px));left:max(16px,env(safe-area-inset-left,0px));z-index:4;font-family:var(--f-type);font-size:14px;letter-spacing:.12em;color:var(--paper);opacity:0;transition:opacity .8s ease;text-shadow:0 1px 8px rgba(0,0,0,.8);pointer-events:none}
+#place.on{opacity:.9}
+
+#hud{position:absolute;top:calc(10px + env(safe-area-inset-top,0px));right:max(12px,env(safe-area-inset-right,0px));z-index:11;display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
+.meter{display:flex;align-items:center;gap:8px;font-family:var(--f-ui);font-size:12px;color:var(--dim);background:rgba(10,12,16,.6);border:1px solid var(--line);border-radius:999px;padding:4px 12px;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+.meter i{display:block;width:12px;height:6px;border-radius:2px;background:rgba(233,225,207,.15)}
+.meter i.on{background:var(--red);box-shadow:0 0 6px rgba(179,38,30,.7)}
+.meter.bump{animation:bump .6s ease}
+@keyframes bump{30%{transform:scale(1.12);border-color:var(--red)}}
+.hb{appearance:none;border:1px solid var(--line);background:rgba(10,12,16,.6);border-radius:999px;padding:4px 12px;font-family:var(--f-ui);font-size:12.5px;color:var(--paper);cursor:pointer;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+.hb:hover{border-color:var(--amber)}
+.hb[aria-pressed="true"]{background:var(--amber);color:var(--amber-ink)}
+
+#box{position:absolute;z-index:5;left:50%;transform:translateX(-50%);bottom:calc(14px + env(safe-area-inset-bottom,0px));width:min(920px,calc(100% - 2*max(16px,env(safe-area-inset-left,0px))));min-height:134px;background:var(--slate);border:1px solid var(--line);border-radius:6px;padding:24px 26px 28px;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);box-shadow:0 18px 50px rgba(0,0,0,.45);transition:opacity .3s ease}
+#box.off{opacity:0;pointer-events:none}
+#name{position:absolute;top:-14px;left:22px;font-family:var(--f-head);font-weight:600;font-size:15px;letter-spacing:.12em;background:var(--paper);color:var(--paper-ink);padding:2px 14px 3px;border-radius:2px;box-shadow:2px 2px 0 rgba(0,0,0,.4)}
+#name::before{content:"";display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--red);margin-right:8px;vertical-align:2px}
+#text{margin:0;font-size:clamp(16px,1.2vw + 10px,20px);line-height:1.85;letter-spacing:.02em;min-height:3.7em}
+#box.narr #text{color:var(--dim)}
+#box.self #text{color:var(--amber)}
+#more{position:absolute;right:18px;bottom:10px;color:var(--amber);font-size:12px;opacity:0;animation:nudge 1s ease-in-out infinite}
+#more.on{opacity:1}
+@keyframes nudge{50%{transform:translateY(3px)}}
+
+#choices{position:absolute;inset:0;z-index:8;display:grid;place-content:center;gap:12px;padding-inline:max(16px,env(safe-area-inset-left,0px));background:radial-gradient(ellipse at center,rgba(5,6,10,.5),rgba(5,6,10,.82));cursor:default}
+.ch-q{font-family:var(--f-type);font-size:13px;letter-spacing:.2em;color:var(--amber);text-align:center;margin:0 0 4px}
+.ch-t{font-family:var(--f-head);font-weight:600;font-size:clamp(18px,3.5vw,24px);text-align:center;margin:0 0 10px;max-width:min(560px,calc(100vw - 32px))}
+.ch{appearance:none;width:min(560px,calc(100vw - 32px));text-align:left;border:1px solid rgba(233,225,207,.25);background:rgba(20,23,30,.92);border-radius:4px;padding:14px 18px;font-family:var(--f-head);font-size:16.5px;line-height:1.6;color:var(--paper);cursor:pointer;display:flex;gap:14px;align-items:baseline;transition:border-color .15s,background .15s,transform .15s}
+.ch:hover,.ch:focus-visible{border-color:var(--amber);background:rgba(217,164,65,.12);transform:translateX(4px)}
+.ch b{font-family:var(--f-type);font-size:13px;color:var(--amber);flex:none}
+
+/* 镜头与动态道具 */
+#cam{position:absolute;inset:0;transform-origin:50% 45%;transition:transform 7s cubic-bezier(.25,.1,.25,1);will-change:transform}
+#game.shake #cam,#game.shake #npc,#game.shake #props{animation:shake .45s linear}
+@keyframes shake{20%{translate:-6px 3px}40%{translate:5px -4px}60%{translate:-4px 2px}80%{translate:3px -1px}}
+#rainfx{position:absolute;inset:-20%;z-index:3;pointer-events:none;opacity:0;transition:opacity 1.2s;background:repeating-linear-gradient(105deg,rgba(190,205,225,.0) 0 22px,rgba(190,205,225,.22) 22px 23px);background-size:120px 120px;animation:rainmv .35s linear infinite}
+#rainfx.on{opacity:1}
+@keyframes rainmv{to{background-position:-30px 120px}}
+#flashfx{position:absolute;inset:0;z-index:7;background:#fff;opacity:0;pointer-events:none}
+#heartfx{position:absolute;inset:0;z-index:3;pointer-events:none;opacity:0;background:radial-gradient(ellipse at center,rgba(0,0,0,0) 45%,rgba(140,10,10,.55))}
+#heartfx.on{animation:hb 1.3s ease-out 2}
+@keyframes hb{0%{opacity:0}12%{opacity:1}30%{opacity:.2}42%{opacity:.85}100%{opacity:0}}
+#props{position:absolute;left:0;right:0;top:calc(56px + env(safe-area-inset-top,0px));bottom:178px;z-index:4;pointer-events:none;display:grid;place-items:center;padding-inline:16px}
+#props>*{transition:opacity .35s}
+#props.out>*{opacity:0}
+.tg{width:min(560px,100%);background:#EFE6CF;color:#2A2418;font-family:var(--f-type);padding:14px 18px 16px;box-shadow:0 16px 40px rgba(0,0,0,.55);transform-origin:top center;animation:tgIn .7s cubic-bezier(.2,1.2,.4,1) both,sway 4s ease-in-out .7s infinite}
+.tg-h{display:flex;justify-content:space-between;gap:10px;font-size:12px;letter-spacing:.2em;border-bottom:1px dashed rgba(42,36,24,.5);padding-bottom:6px;margin:0 0 8px}
+.tg-b{font-size:clamp(15px,2.4vw,21px);letter-spacing:.1em;line-height:1.5;min-height:1.5em;margin:0;word-break:break-word}
+@keyframes tgIn{from{transform:translateY(-130%) rotate(-5deg);opacity:0}to{transform:rotate(-1deg);opacity:1}}
+@keyframes sway{0%,100%{transform:rotate(-1deg)}50%{transform:rotate(.6deg)}}
+.pd{position:relative;width:min(430px,100%);background:var(--paper);color:var(--paper-ink);padding:18px 22px 20px;box-shadow:0 18px 44px rgba(0,0,0,.55);animation:pdIn .65s cubic-bezier(.2,1.1,.4,1) both;background-image:repeating-linear-gradient(0deg,rgba(80,60,30,.05) 0 1px,transparent 1px 26px)}
+@keyframes pdIn{from{transform:translateX(70%) rotate(10deg);opacity:0}to{transform:rotate(-2deg);opacity:1}}
+.pd-t{font-family:var(--f-head);font-weight:900;font-size:18px;margin:0 0 10px;letter-spacing:.06em}
+.pd ul{list-style:none;margin:0;padding:0;display:grid;gap:6px;font-size:15px}
+.pd li{opacity:0;animation:liIn .4s ease forwards;display:flex;gap:8px;align-items:center}
+@keyframes liIn{from{opacity:0;transform:translateX(-6px)}to{opacity:1;transform:none}}
+.pd .bar{display:inline-block;height:1em;background:#15130F;width:0;animation:bar .5s ease forwards}
+@keyframes bar{to{width:7em}}
+.pd .hl{background:linear-gradient(transparent 60%,rgba(179,38,30,.35) 60%);background-size:0 100%;background-repeat:no-repeat;animation:hlg .8s ease 1.1s forwards;font-weight:700}
+@keyframes hlg{to{background-size:100% 100%}}
+.pd .ph{float:right;width:72px;height:90px;margin:0 0 6px 12px;background:linear-gradient(#8E8778,#5E584C);position:relative;overflow:hidden;filter:grayscale(1)}
+.pd .ph::before{content:"";position:absolute;left:50%;top:22%;width:30px;height:36px;margin-left:-15px;border-radius:50%;background:#2D2A24}
+.pd .ph::after{content:"";position:absolute;left:50%;bottom:-18px;width:60px;height:40px;margin-left:-30px;border-radius:50% 50% 0 0;background:#2D2A24}
+.pd .st{position:absolute;right:16px;bottom:14px;font-family:var(--f-type);color:var(--red);border:3px solid var(--red);padding:2px 10px;font-size:18px;letter-spacing:.15em;opacity:0;animation:slam .35s cubic-bezier(.3,1.6,.5,1) 1.1s forwards}
+.pd svg.sig{display:block;width:180px;height:44px;margin:6px 0 0}
+.pd svg.sig path{fill:none;stroke:#1C2A55;stroke-width:2.2;stroke-linecap:round;stroke-dasharray:420;stroke-dashoffset:420;animation:draw 1.4s ease .6s forwards}
+@keyframes draw{to{stroke-dashoffset:0}}
+.nt{max-width:min(340px,100%);background:#F3EBD6;color:#2B2318;font-family:"Kaiti SC","STKaiti","KaiTi","Noto Serif SC",serif;font-size:21px;line-height:1.7;white-space:pre-line;padding:16px 20px;box-shadow:0 14px 34px rgba(0,0,0,.5);animation:ntIn .8s cubic-bezier(.2,1.2,.4,1) both}
+.nt small{display:block;font-family:var(--f-ui);font-size:12px;color:#6A5E4A;margin-top:6px}
+@keyframes ntIn{from{transform:translateY(-40px) rotate(14deg);opacity:0}to{transform:rotate(-3deg);opacity:1}}
+.np{width:min(540px,100%);background:#E8E0CB;color:#1A1712;padding:12px 18px 16px;box-shadow:0 18px 44px rgba(0,0,0,.6);animation:npIn 1s cubic-bezier(.2,.9,.3,1) both}
+@keyframes npIn{from{transform:rotate(-720deg) scale(.05);opacity:0}to{transform:rotate(-3deg) scale(1);opacity:1}}
+.np-m{font-family:var(--f-type);font-size:12px;letter-spacing:.3em;display:flex;justify-content:space-between;border-bottom:3px double #1A1712;padding-bottom:6px;margin:0}
+.np-h{font-family:var(--f-head);font-weight:900;font-size:clamp(22px,4.6vw,34px);line-height:1.25;margin:10px 0 4px}
+.np-s{font-size:13px;margin:0 0 10px;color:#4A4236}
+.np-c{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.np-c i{display:block;height:5px;background:rgba(26,23,18,.25);margin-bottom:5px}
+.stp{font-family:var(--f-type);font-size:clamp(28px,6vw,52px);letter-spacing:.12em;color:var(--red);border:5px solid var(--red);padding:6px 22px;transform:rotate(-8deg);animation:slam .4s cubic-bezier(.3,1.6,.5,1) both;mix-blend-mode:screen;text-shadow:0 0 18px rgba(179,38,30,.35)}
+@keyframes slam{from{transform:scale(2.6) rotate(-8deg);opacity:0}to{transform:scale(1) rotate(-8deg);opacity:1}}
+.mp{width:min(560px,100%);background:rgba(12,15,20,.82);border:1px solid var(--line);box-shadow:0 14px 40px rgba(0,0,0,.5);animation:fadeUp .5s ease both}
+.mp svg{display:block;width:100%;height:auto}
+.mp .rt{fill:none;stroke:var(--amber);stroke-width:2.5;stroke-dasharray:6 7;stroke-dashoffset:600;animation:route 1.8s ease forwards}
+.mp.slow .rt{animation-duration:3.6s}
+@keyframes route{to{stroke-dashoffset:0}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+.ck{display:grid;justify-items:center;gap:14px;animation:fadeUp .4s ease both}
+.ck svg{width:120px;height:120px}
+.ck .mh{transform-origin:60px 60px;animation:spin 1.6s cubic-bezier(.4,0,.2,1) forwards}
+.ck .hh{transform-origin:60px 60px;animation:spin2 1.6s cubic-bezier(.4,0,.2,1) forwards}
+@keyframes spin{to{transform:rotate(2160deg)}}
+@keyframes spin2{to{transform:rotate(180deg)}}
+.ck p{margin:0;font-family:var(--f-head);font-weight:900;font-size:clamp(26px,5vw,40px);letter-spacing:.2em;text-shadow:0 2px 14px rgba(0,0,0,.8)}
+.md{animation:mdIn 1s cubic-bezier(.3,1.4,.5,1) both,mdSw 3s ease-in-out 1s infinite;transform-origin:50% 0}
+.md svg{width:120px;height:190px;filter:drop-shadow(0 10px 20px rgba(0,0,0,.6))}
+@keyframes mdIn{from{transform:translateY(-140%)}to{transform:none}}
+@keyframes mdSw{0%,100%{transform:rotate(-3deg)}50%{transform:rotate(3deg)}}
+@media (max-width:560px){#props{bottom:200px}}
+
+#toast{position:absolute;left:50%;top:calc(58px + env(safe-area-inset-top,0px));transform:translateX(-50%);z-index:12;max-width:min(520px,calc(100% - 32px));background:rgba(12,14,18,.92);border:1px solid var(--amber);color:var(--paper);font-family:var(--f-ui);font-size:13px;line-height:1.6;padding:10px 16px;border-radius:6px;opacity:0;pointer-events:none}
+#toast.on{animation:toast 6s ease forwards}
+@keyframes toast{0%{opacity:0}6%{opacity:1}85%{opacity:1}100%{opacity:0}}
+
+/* 章节卡 */
+#chap{position:absolute;inset:0;z-index:9;display:grid;place-content:center;text-align:center;background:#07080B;cursor:pointer;padding-inline:16px}
+.cp-y{font-family:var(--f-type);font-size:clamp(64px,16vw,150px);line-height:1;color:var(--paper);letter-spacing:.06em;margin:0;opacity:.95}
+.cp-p{font-family:var(--f-type);font-size:14px;letter-spacing:.3em;color:var(--amber);margin:14px 0 0}
+.cp-t{font-family:var(--f-head);font-weight:600;font-size:clamp(22px,4vw,30px);margin:18px 0 0;letter-spacing:.3em}
+.cp-n{font-family:var(--f-ui);font-size:12px;color:var(--dim);margin:26px 0 0}
+#chap .cp-y,#chap .cp-p,#chap .cp-t{animation:rise .9s ease both}
+#chap .cp-p{animation-delay:.25s}#chap .cp-t{animation-delay:.45s}
+@keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+
+/* 解密档案卡 */
+#card{position:absolute;inset:0;z-index:9;display:grid;place-items:center;background:rgba(6,7,10,.72);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);padding:20px max(16px,env(safe-area-inset-left,0px));cursor:pointer;overflow-y:auto}
+.doc{position:relative;width:min(560px,100%);background:var(--paper);color:var(--paper-ink);padding:26px 26px 22px;box-shadow:0 24px 60px rgba(0,0,0,.6);transform:rotate(-.8deg);animation:slide .5s cubic-bezier(.2,1.1,.4,1);background-image:repeating-linear-gradient(0deg,rgba(80,60,30,.05) 0 1px,transparent 1px 28px)}
+@keyframes slide{from{opacity:0;transform:translateY(30px) rotate(-3deg)}to{opacity:1;transform:rotate(-.8deg)}}
+.doc-k{font-family:var(--f-type);font-size:12px;letter-spacing:.2em;color:#5A4E3C;display:flex;justify-content:space-between;gap:10px;border-bottom:1px dashed rgba(36,32,26,.35);padding-bottom:8px;margin:0}
+.doc-h{font-family:var(--f-head);font-weight:900;font-size:20px;margin:16px 0 8px}
+.doc-p{margin:0;font-size:15.5px;line-height:1.85}
+.doc-ph{margin:16px 0 0;border:1px dashed rgba(36,32,26,.45);display:grid;place-items:center;min-height:120px;font-family:var(--f-ui);font-size:12.5px;color:#6A5E4A;text-align:center;padding:12px;background:rgba(36,32,26,.04)}
+.doc-ph img{width:100%;height:auto;display:block;filter:grayscale(1) contrast(1.05)}
+.doc-ph.drawn,figure.doc-ph{display:block;min-height:0;padding:8px 8px 6px;background:#F7F2E6;border:none;box-shadow:0 4px 14px rgba(0,0,0,.25);transform:rotate(1.2deg);margin-left:0;margin-right:0}
+.doc-ph canvas{display:block;width:100%;height:auto}
+.doc-ph figcaption{font-family:var(--f-ui);font-size:11.5px;color:#6A5E4A;margin-top:6px;text-align:left}
+.stamp{position:absolute;top:46px;right:20px;font-family:var(--f-type);font-size:18px;letter-spacing:.12em;color:var(--red);border:3px solid var(--red);padding:3px 10px;transform:rotate(8deg);opacity:.85;mix-blend-mode:multiply}
+.doc-f{font-family:var(--f-ui);font-size:12px;color:#6A5E4A;margin:14px 0 0;text-align:right}
+.doc.alt .stamp{color:#2D4C66;border-color:#2D4C66}
+.doc.loop .stamp{color:#8A5E10;border-color:#8A5E10}
+#act{position:absolute;inset:0;z-index:10;background:#000;overflow:hidden}
+#actc{position:absolute;inset:0;width:100%;height:100%;display:block}
+.act-tag{position:absolute;left:max(16px,env(safe-area-inset-left,0px));top:calc(54px + env(safe-area-inset-top,0px));margin:0;font-family:var(--f-type);font-size:12px;letter-spacing:.2em;color:var(--amber);border:1px solid rgba(217,164,65,.5);padding:3px 8px}
+.act-cap{position:absolute;left:16px;right:16px;top:calc(92px + env(safe-area-inset-top,0px));margin:0;text-align:center;font-family:var(--f-ui);font-size:clamp(15px,2.2vw,20px);color:var(--paper);text-shadow:0 2px 10px #000;opacity:0}
+.act-cap.on{animation:capIn .5s ease forwards}@keyframes capIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.act-q{position:absolute;left:0;right:0;top:calc(132px + env(safe-area-inset-top,0px));display:grid;justify-items:center;gap:10px;padding:0 16px}
+.act-q .qp{margin:0;font-family:var(--f-ui);font-weight:700;font-size:clamp(20px,3.4vw,30px);color:var(--amber);text-shadow:0 2px 12px #000;letter-spacing:.06em}
+.act-q .qp.bad{color:#FF6B5E}
+.act-q .qb{display:flex;gap:14px}
+.act-q button{appearance:none;min-width:76px;height:64px;border-radius:14px;border:1px solid rgba(233,225,207,.35);background:rgba(10,12,16,.7);color:var(--paper);font-size:28px;font-family:var(--f-ui);cursor:pointer;touch-action:manipulation}
+.act-q button.hot{border-color:var(--amber);box-shadow:0 0 0 2px rgba(217,164,65,.35);animation:qpulse .5s ease-in-out infinite alternate}
+.act-q button.wide{min-width:180px;font-size:22px;font-weight:700}
+@keyframes qpulse{to{background:rgba(217,164,65,.28)}}
+.act-q .qt{display:block;width:min(320px,70vw);height:4px;background:rgba(233,225,207,.15);border-radius:2px;overflow:hidden}.act-q .qt b{display:block;height:100%;background:var(--amber);transform-origin:left}
+.act-skip{position:absolute;right:max(16px,env(safe-area-inset-right,0px));bottom:calc(16px + env(safe-area-inset-bottom,0px));appearance:none;border:1px solid rgba(233,225,207,.3);background:rgba(10,12,16,.6);color:var(--dim);border-radius:999px;padding:6px 14px;font-family:var(--f-ui);font-size:13px;cursor:pointer}
+@media (max-width:560px){.act-q{top:calc(160px + env(safe-area-inset-top,0px))}.act-tag{top:calc(86px + env(safe-area-inset-top,0px))}.act-cap{top:calc(118px + env(safe-area-inset-top,0px))}}
+.cks{margin:4px 0 22px}.cks h3,.ck-g h3{font-family:var(--f-ui);font-size:13px;font-weight:400;letter-spacing:.12em;color:var(--dim);margin:0 0 10px}
+.ck-row{display:flex;flex-wrap:wrap;gap:8px}.ck-g{margin:0 0 20px}
+.ck{appearance:none;border:1px solid rgba(233,225,207,.25);background:rgba(233,225,207,.04);border-radius:6px;padding:8px 12px;color:var(--paper);font-family:var(--f-ui);font-size:13.5px;cursor:pointer;text-align:left;line-height:1.35}
+.ck:hover{border-color:var(--amber);background:rgba(217,164,65,.12)}.ck b{display:block;font-family:var(--f-type);font-size:15px;letter-spacing:.06em;color:var(--amber);font-weight:400}
+.ck.s b{color:#F2B8A6}.ck.d b{color:#D9CCF5}
+.end-line{display:inline-block;margin-right:10px;padding:2px 8px;border:1px solid currentColor;font-size:.85em;letter-spacing:.12em}
+.end-line.s{color:#E07A5F}.end-line.d{color:#B9A2E8}.end-line.h{color:#D9C8A0}
+.route .node.s{border-color:#E07A5F;color:#F2B8A6}.route .node.d{border-color:#B9A2E8;color:#D9CCF5}
+.got.lines{margin-top:-16px}.got.lines span{margin-right:16px;white-space:nowrap}
+.node.l{border-color:var(--amber);border-style:dashed;color:var(--paper);background:rgba(217,164,65,.06)}
+
+/* 覆盖页 */
+.sheet{position:absolute;inset:0;z-index:10;overflow-y:auto;cursor:default;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:calc(40px + env(safe-area-inset-top,0px)) calc(40px + env(safe-area-inset-bottom,0px))}
+.sheet.dark{background:rgba(9,10,14,.94)}
+.wrap{max-width:740px;margin:0 auto}
+#title{display:grid;align-content:center;background:linear-gradient(180deg,rgba(8,9,12,.25),rgba(8,9,12,.75))}
+.t-file{font-family:var(--f-type);font-size:13px;letter-spacing:.2em;color:var(--dim);margin:0;display:flex;gap:14px;flex-wrap:wrap;align-items:center}
+.t-file .tag{color:var(--red);border:2px solid var(--red);padding:1px 8px;transform:rotate(-3deg);display:inline-block}
+.t-big{font-family:var(--f-head);font-weight:900;font-size:clamp(60px,13vw,124px);line-height:1;margin:18px 0 0;letter-spacing:.12em}
+.t-en{font-family:var(--f-type);font-size:clamp(14px,2.4vw,18px);color:var(--amber);letter-spacing:.3em;margin:10px 0 0}
+.t-sub{font-size:16px;color:var(--dim);margin:18px 0 0;max-width:31em;line-height:1.85}
+.t-row{display:flex;flex-wrap:wrap;gap:12px;margin-top:30px}
+.btn{appearance:none;border:1px solid var(--amber);background:transparent;border-radius:4px;padding:10px 26px;font-family:var(--f-head);font-size:16px;color:var(--paper);cursor:pointer;transition:background .15s}
+.btn:hover{background:rgba(217,164,65,.14)}
+.btn.main{background:var(--amber);color:var(--amber-ink);font-weight:600}
+.btn.main:hover{background:#E6B455}
+.t-meta{margin-top:26px;font-family:var(--f-ui);font-size:12.5px;color:var(--dim);display:flex;gap:16px;flex-wrap:wrap}
+.t-meta b{color:var(--paper);font-variant-numeric:tabular-nums}
+.h2{font-family:var(--f-head);font-weight:900;font-size:28px;margin:0 0 8px;letter-spacing:.06em}
+.lead{color:var(--dim);margin:0 0 22px;line-height:1.85}
+.tw{overflow-x:auto;border:1px solid var(--line);border-radius:6px;margin-bottom:22px}
+table{border-collapse:collapse;width:100%;min-width:520px;font-family:var(--f-ui);font-size:13.5px}
+th,td{text-align:left;padding:10px 14px;border-bottom:1px solid var(--line);vertical-align:top}
+tr:last-child td{border-bottom:0}
+th{color:var(--amber);font-weight:600;font-size:12px;letter-spacing:.1em}
+td:first-child{white-space:nowrap;color:var(--paper);font-variant-numeric:tabular-nums}
+td{color:var(--dim)}
+.end-k{font-family:var(--f-type);font-size:13px;letter-spacing:.25em;color:var(--amber);margin:0}
+.end-k.alt{color:var(--steel)}
+.end-t{font-family:var(--f-head);font-weight:900;font-size:clamp(40px,8vw,64px);margin:10px 0 0;letter-spacing:.08em}
+.end-d{color:var(--dim);margin:14px 0 0;line-height:1.85;max-width:34em}
+.score{margin:26px 0 0;font-family:var(--f-ui);font-size:14px;color:var(--dim)}
+.score b{color:var(--paper);font-size:20px;font-variant-numeric:tabular-nums}
+.route{margin:16px 0 8px;display:flex;flex-wrap:wrap;gap:8px 6px;align-items:center}
+.node{font-family:var(--f-ui);font-size:12.5px;padding:5px 10px;border:1px solid rgba(233,225,207,.18);border-radius:4px;color:rgba(233,225,207,.4);white-space:nowrap}
+.node.h{border-color:var(--amber);color:var(--paper);background:rgba(217,164,65,.12)}
+.node.a{border-color:var(--steel);color:var(--paper);background:rgba(111,135,152,.15)}
+.arrow{color:rgba(233,225,207,.3);font-family:var(--f-ui);font-size:12px}
+.got{font-family:var(--f-ui);font-size:13px;color:var(--dim);margin:14px 0 24px}
+.got b{color:var(--paper);font-variant-numeric:tabular-nums}
+.log{list-style:none;margin:0;padding:0;display:grid;gap:14px}
+.log li{line-height:1.8}
+.log .who{display:block;font-weight:600;color:var(--amber);font-size:14px;letter-spacing:.1em}
+.log .nar{color:var(--dim)}
+.log .pick{font-family:var(--f-ui);font-size:13px;color:var(--amber)}
+
+@media (prefers-reduced-motion: reduce){
+  #cam{transition:none}#rainfx,#props *,#heartfx.on{animation:none!important}
+  .pd li{opacity:1}.pd .bar{width:7em}.pd .st{opacity:1}.pd svg.sig path{stroke-dashoffset:0}
+  #npc .breathe,#more,.doc,#chap .cp-y,#chap .cp-p,#chap .cp-t,.meter.bump{animation:none}
+  #snap,#veil,#npc,#bg{transition-duration:.01s}
+}
+@media (max-width:560px){
+  #place{top:calc(50px + env(safe-area-inset-top,0px));font-size:12.5px}
+  #hud{gap:4px;left:max(12px,env(safe-area-inset-left,0px))}
+  .hb{padding:4px 8px;font-size:12px}
+  #bAuto{display:none}
+  .meter{padding:4px 9px;gap:5px}
+  .meter i{width:9px}
+  #props{top:calc(84px + env(safe-area-inset-top,0px))}
+  #box{padding:22px 18px 26px;min-height:150px}
+  #npc{height:min(68%,560px)}
+  .meter span{display:none}
+}
+</style>
+
+</head>
+<body>
+<div id="game" aria-label="互动剧情：第三人">
+  <div id="cam"><canvas id="bg" class="layer" aria-hidden="true"></canvas>
+  <canvas id="snap" class="layer" aria-hidden="true"></canvas></div>
+  <div id="rainfx" aria-hidden="true"></div>
+  <div id="npc" aria-hidden="true"></div>
+  <canvas id="grain" class="layer" aria-hidden="true"></canvas>
+  <div id="props" aria-hidden="true"></div>
+  <div id="heartfx" aria-hidden="true"></div>
+  <div id="flashfx" aria-hidden="true"></div>
+  <div id="place"></div>
+  <div id="veil"></div>
+
+  <div id="hud" hidden>
+    <div class="meter" id="meter" title="怀疑值"><span>怀疑值</span><i></i><i></i><i></i><i></i><i></i></div>
+    <button class="hb" id="bMusic" type="button" aria-pressed="true">音乐</button>
+    <button class="hb" id="bVoice" type="button" aria-pressed="true">配音</button>
+    <button class="hb" id="bAuto" type="button" aria-pressed="false">自动</button>
+    <button class="hb" id="bLog" type="button">记录</button>
+    <button class="hb" id="bTitle" type="button">标题</button>
+  </div>
+
+  <div id="box" class="off" aria-live="polite">
+    <span id="name" hidden></span>
+    <p id="text"></p>
+    <span id="more">▼</span>
+  </div>
+
+  <div id="act" hidden><canvas id="actc" aria-hidden="true"></canvas><p class="act-tag"></p><p class="act-cap" aria-live="polite"></p><div class="act-q" hidden></div><button type="button" class="act-skip">跳过 ›</button></div>
+  <div id="choices" hidden></div>
+  <div id="chap" hidden></div>
+  <div id="card" hidden></div>
+
+  <section id="title" class="sheet">
+    <div class="wrap">
+      <p class="t-file"><span class="tag">绝密</span><span>档案 · 剑桥五人组 · 第三人</span></p>
+      <h1 class="t-big">第三人</h1>
+      <p class="t-en">THE THIRD MAN · 1934–1963</p>
+      <p class="t-sub">你是金·菲尔比，英国军情六处的明日之星，也是苏联最成功的间谍之一。替他做五个决定。1945 年，路分成三条：照历史走；提前投奔苏联；或者同时出卖两边，让谁都不知道你真正属于谁。</p>
+      <div class="t-row">
+        <button class="btn main" type="button" id="bStart">开始</button>
+        <button class="btn" type="button" id="bChapters" hidden>章节选择</button>
+      </div>
+      <div class="t-meta"><span>点击画面或按空格继续</span><span>已解锁结局 <b id="gotN">0</b> / <span class="gotOf">15</span></span></div>
+    </div>
+  </section>
+
+  <section id="info" class="sheet dark" hidden>
+    <div class="wrap">
+      <h2 class="h2">这个小样包含什么</h2>
+      <p class="lead">一个"替历史人物做决定"的互动剧情。五章对应金·菲尔比一生中五个真实事件，每次选择后都会弹出解密档案，告诉你历史上他实际怎么做。档案里的配图是用代码画的老照片风格场景（标注了"画面重现"），拿到授权的历史照片后可以直接替换。</p>
+      <div class="tw"><table>
+        <thead><tr><th>章节</th><th>事件</th><th>史实要点</th></tr></thead>
+        <tbody>
+          <tr><td>1934</td><td>伦敦 · 被招募</td><td>在摄政公园与苏联情报官阿诺德·多伊奇见面，同意为苏联工作</td></tr>
+          <tr><td>1945</td><td>伊斯坦布尔 · 沃尔科夫</td><td>苏联叛逃者要揭发英国反间谍部门的内鬼，菲尔比接手并拖延，沃尔科夫失踪</td></tr>
+          <tr><td>1951</td><td>华盛顿 · 荷马</td><td>得知"荷马"就是麦克林，通过伯吉斯示警，两人出逃苏联</td></tr>
+          <tr><td>1955</td><td>伦敦 · 记者会</td><td>被指为"第三人"，在母亲的公寓里召开记者会公开否认</td></tr>
+          <tr><td>1963</td><td>贝鲁特 · 摊牌</td><td>军情六处的老友埃利奥特当面摊牌，菲尔比随后出逃莫斯科</td></tr>
+        </tbody>
+      </table></div>
+      <h2 class="h2" style="font-size:22px;margin-top:8px">三条主线</h2>
+      <div class="tw"><table>
+        <thead><tr><th>路线</th><th>怎么进入</th><th>讲什么</th><th>结局</th></tr></thead>
+        <tbody>
+          <tr><td>史实线</td><td>1945 年拖延出发</td><td>和真实历史一样：潜伏到 1963 年，在贝鲁特摊牌</td><td>7 个</td></tr>
+          <tr><td>苏联线（虚构）</td><td>1945 年连夜投奔苏联领事馆</td><td>提前十八年去了莫斯科：被怀疑、去柏林对付老东家、最后站在交换间谍的桥上</td><td>4 个</td></tr>
+          <tr><td>双面线（架空）</td><td>1945 年两头下注</td><td>同时替英国和苏联工作，两边都不知道。每一章两边都来找你要东西</td><td>4 个</td></tr>
+        </tbody>
+      </table></div>
+      <p class="lead">玩法：一共 15 个结局。每个决定有三个选项（1945 和 1963 年的史实线有四个）。偏离的选项不会马上结束，而是先出现后果，再给你一次补救的机会：补救成功就绕回原来的路线，补救失败就走向别的结局。新路线里也会穿插真实的历史档案，比如柏林隧道和格利尼克桥。右上角的怀疑值会随你的选择变化，并影响最后一章的对话。每一章有自己的配乐，全部由浏览器实时合成。角色说话有配音：页面会挑你设备上最自然的中文男声来读，每个角色的声音和语速不同；用 Windows 上的 Edge 浏览器效果最好。以后把真人录音按台词编号放进来，就会自动换成录音。人物以剪影出现，场景和人物都可以替换成真实照片或插画。</p>
+      <h2 class="h2" style="font-size:22px;margin-top:8px">配音</h2>
+      <p class="lead">角色台词会配音，只用成熟的中文男声。有录音文件时播放录音；没有时用你设备上的中文男声朗读，找不到男声就不配音。</p>
+      <div class="tw"><table>
+        <thead><tr><th>设备</th><th>怎样获得中文男声</th></tr></thead>
+        <tbody>
+          <tr><td>Windows · Edge</td><td>自带微软自然语音（云扬、云健等），效果最好，不用设置</td></tr>
+          <tr><td>Windows · Chrome</td><td>在 Windows 设置里添加中文语音包，会多出男声「康康」；声音较机械，建议换用 Edge</td></tr>
+          <tr><td>Mac / iPhone</td><td>在「辅助功能 → 朗读内容 → 声音 → 中文」里下载一个男声，下载后刷新本页</td></tr>
+          <tr><td>安卓</td><td>浏览器通常只提供女声，建议用录音版本</td></tr>
+        </tbody>
+      </table></div>
+      <button class="btn" type="button" data-close="info">返回</button>
+    </div>
+  </section>
+
+  <section id="ending" class="sheet dark" hidden>
+    <div class="wrap">
+      <p class="end-k"><span id="endLine" class="end-line"></span><span id="endK"></span></p>
+      <h2 class="end-t" id="endT"></h2>
+      <p class="end-d" id="endD"></p>
+      <p class="score">和历史一致 <b id="hitN">0</b> / <span id="hitOf">5</span>　·　偏离后绕回 <b id="loopN">0</b></p>
+      <div class="route" id="route" aria-label="你的决定"></div>
+      <p class="got">已解锁结局 <b id="gotN2">0</b> / <span class="gotOf">15</span></p>
+      <p class="got lines" id="gotLines"></p>
+      <div class="cks" id="endCks"></div>
+      <div class="t-row">
+        <button class="btn main" type="button" id="bAgain">再来一次</button>
+        <button class="btn" type="button" id="bHome">回到标题</button>
+      </div>
+    </div>
+  </section>
+
+  <section id="ckSheet" class="sheet dark" hidden>
+    <div class="wrap">
+      <h2 class="h2">章节选择</h2>
+      <p class="lead">玩过的章节都会记在这里。点一章，就从那一章的开头重新开始，之前的决定和怀疑值保持当时的样子。</p>
+      <div id="ckList"></div>
+      <div class="t-row"><button class="btn" type="button" data-close="ckSheet">返回</button></div>
+    </div>
+  </section>
+
+  <section id="logSheet" class="sheet dark" hidden>
+    <div class="wrap">
+      <h2 class="h2">记录</h2>
+      <ul class="log" id="logList"></ul>
+      <div class="t-row"><button class="btn" type="button" data-close="logSheet">返回</button></div>
+    </div>
+  </section>
+</div>
+
+<script>
+/* ================= 图片表（填上文件名即替换；历史照片建议用公有领域或已获授权的图片） ================= */
+const ART = {
+  bg: { park: "", istanbul: "", office: "", press: "", beirut: "", moscow: "", berlin: "", bridge: "" },
+  photo: { p1934: "", p1945: "", p1951: "", p1955: "", p1963: "", pBerlin: "", pMoscow: "" },
+  /* 配音录音：默认读取 voice/台词编号.mp3（编号见剧本里每句台词的 v，如 "O1"、"C3"）；这里可以给某句另指文件 */
+  voice: {}
+};
+
+/* ================= 剧本 ================= */
+const SCRIPT = [
+  { label: "start" },
+  { chap: "1934", place: "LONDON · REGENT'S PARK", title: "招 募" },
+  { bg: "park", place: "1934 · 伦敦 · 摄政公园", trans: "black" },
+  { fx: { map: ["VIENNA", "LONDON"] }, n: "1934 年 6 月。你二十二岁，刚从维也纳回到伦敦。" },
+  { fx: { doc: { title: "人物档案", lines: ["HAROLD ADRIAN RUSSELL PHILBY", "通称：金（KIM）", "1912 年生于印度", "剑桥大学三一学院"] } }, n: "你的全名是哈罗德·阿德里安·拉塞尔·菲尔比，朋友们都叫你「金」。" },
+  { fx: { cam: "right" }, n: "一个自称「奥托」的人，约你在公园的长椅上见面。" },
+  { show: "otto" },
+  { s: "奥托", t: "你在维也纳帮过那些被追捕的人。我们注意到你了。", v: "O1" },
+  { s: "奥托", t: "我们需要的不是街头喊口号的人，是能走进英国权力中心的人。", v: "O2" },
+  { fx: { cam: "in" }, s: "奥托", t: "你愿意为我们工作吗？哪怕这意味着，你要一辈子扮演另一个人。", v: "O3" },
+  { choice: "1934", q: "1934 · 第一个决定", h: "你会怎么回答奥托？", opts: [
+    { t: "「我愿意。」", go: "c1h", hist: true, fx: { stamp: "代号 SÖHNCHEN" } },
+    { t: "「谢谢你的赏识，但我不适合。」", go: "e1", fx: { cam: "out" } },
+    { t: "「先让我见见你的上级，我要知道自己在替谁卖命。」", go: "c1c", sus: 1, fx: { note: "下周，同一张长椅。" } } ] },
+  { label: "c1c" },
+  { fx: { cam: "in" }, s: "奥托", t: "你很谨慎。这正是我们需要的。下周，同一张长椅。", v: "O4" },
+  { hide: true },
+  { fx: { skip: "一周后" }, n: "一周后，奥托准时出现。他没有带上级来，只带来一张写着指令的纸条。" },
+  { show: "otto" },
+  { s: "奥托", t: "上面的回答是：先证明你自己。", v: "O5" },
+  { fx: { note: "一、断绝与左派朋友的来往\n二、找一份体面的工作\n三、让所有人以为你变了" }, s: "奥托", t: "和你那些左派朋友断绝来往，去找一份体面的工作，让所有人都以为你变了。", v: "O6" },
+  { choice: "1934r", sub: true, q: "补救 · 1934", h: "这是莫斯科给你的第一个考验。", opts: [
+    { t: "照做。从今天起，你是另一个人。", go: "c1back", sus: -1, fx: { stamp: "COVER · 掩护" } },
+    { t: "「我不会背叛我的朋友。」", go: "e1b", fx: { cam: "out" } } ] },
+  { label: "c1back" },
+  { loop: "1934" },
+  { hide: true },
+  { card: null, stamp: "绕回", loop: true, h: "你绕回了历史", t: "历史上菲尔比也正是这样做的：他疏远了剑桥的左派朋友，还加入了亲德的英德联谊会作掩护。你多绕了一段路，结果和历史一样。" },
+  { go: "c1go" },
+
+  { label: "c1h" },
+  { card: "p1934", stamp: "史实", h: "1934 年 6 月 · 摄政公园", t: "菲尔比在摄政公园与苏联情报官阿诺德·多伊奇（化名「奥托」）见面，同意为苏联工作。他后来成为「剑桥五人组」中最有名的一个，另外四人是伯吉斯、麦克林、布伦特和凯恩克罗斯。", ph: "照片位：青年时期的菲尔比" },
+  { label: "c1go" },
+  { hide: true },
+  { fx: { stamp: "COVER · 掩护" }, n: "为了掩护身份，你要把自己变成一个右派。" },
+  { fx: { map: ["LONDON", "TERUEL"] }, n: "你去西班牙内战前线，替《泰晤士报》跟随佛朗哥的军队采访。" },
+  { fx: { skip: "1937 年 12 月 31 日" }, n: "1937 年的最后一天，特鲁埃尔前线。你和另外三个记者坐在一辆车里，等着看佛朗哥的军队进城。" },
+  { act: "spain" },
+  { fx: { heart: true }, n: "炮弹落在车旁。车里另外三个记者都死了，你只受了点轻伤。" },
+  { fx: { medal: true }, n: "几个月后，佛朗哥亲手给你别上一枚红十字军功勋章。没有人会怀疑一个被佛朗哥授勋的英国人。" },
+  { card: null, stamp: "史实", h: "1937 年 12 月 31 日 · 特鲁埃尔", t: "这是真事：菲尔比和三名记者乘坐的汽车在特鲁埃尔附近被共和军炮弹击中，另外三人遇难，菲尔比头部轻伤。佛朗哥随后授予他红十字军功勋章，这枚勋章成了他最好的掩护。" },
+  { fx: { stamp: "SIS · 1940" }, n: "1940 年，你走进了英国秘密情报局：军情六处。接下来的几年，你替两边都立了功。" },
+  { act: "war41" },
+
+  { chap: "1945", place: "ISTANBUL", title: "名 单" },
+  { bg: "istanbul", place: "1945 · 伊斯坦布尔", trans: "black" },
+  { fx: { doc: { title: "SECRET INTELLIGENCE SERVICE", lines: ["第九科 · 反苏联情报", "负责人：H. A. R. PHILBY"] } }, n: "1945 年 8 月。你已经是军情六处第九科的负责人，专门对付苏联间谍。" },
+  { fx: { telegram: { from: "ISTANBUL → LONDON", text: "VOLKOV SOVIET CONSULATE WISHES TO DEFECT STOP" } }, n: "一封电报从伊斯坦布尔发来：苏联领事馆的官员沃尔科夫想投奔英国。" },
+  { fx: { doc: { title: "名单（节选）", lines: ["外交部 ·", "反间谍部门 ·", "……"], redact: true } }, n: "作为见面礼，他要交出苏联安插在英国的间谍名单。其中一个，就在英国的反间谍部门里。" },
+  { fx: { heart: true }, me: "那个人就是我。" },
+  { choice: "1945", q: "1945 · 第二个决定 · 三条路在这里分开", h: "这份名单，你打算怎么办？", opts: [
+    { t: "主动请缨，亲自处理，然后……慢一点出发。", go: "c2h", hist: true, sus: 1, fx: { skip: "三周后" } },
+    { t: "不等了。今晚就去苏联领事馆，让他们送我去莫斯科。", go: "s0", line: "S", sus: 1, fx: { map: ["ISTANBUL", "MOSCOW"] } },
+    { t: "两头下注：给莫斯科报信，也给伦敦送一份大礼。", go: "d0", line: "D", sus: 1, fx: { telegram: { from: "ISTANBUL → MOSCOW / LONDON", text: "TWO MESSAGES SENT SAME NIGHT STOP" } } },
+    { t: "伪造一份报告，说沃尔科夫是苏联设下的圈套。", go: "c2c", sus: 2, fx: { doc: { title: "报告（草稿）", lines: ["事由：沃尔科夫叛逃", "结论：系苏方圈套"], sign: true } } } ] },
+  { label: "c2c" },
+  { fx: { doc: { title: "报告", lines: ["事由：沃尔科夫叛逃", "结论：系苏方圈套", "建议：暂缓处理"], stamp: "机密" } }, n: "报告送了上去。局长看完，沉默了很久。" },
+  { fx: { cam: "in" }, n: "「写得很有说服力。」他把报告放回桌上，「但我还是要有人去伊斯坦布尔，当面见一见这个沃尔科夫。」" },
+  { choice: "1945r", sub: true, q: "补救 · 1945", h: "局长在等你开口。", opts: [
+    { t: "「我去。」然后在路上多耽搁几天。", go: "c2back", sus: -1, fx: { map: ["LONDON", "ISTANBUL"], slow: true } },
+    { t: "「我手头走不开，派别人去吧。」", go: "e2", fx: { telegram: { from: "LONDON → ISTANBUL", text: "OFFICER EN ROUTE MEET VOLKOV STOP" } } } ] },
+  { label: "c2back" },
+  { loop: "1945" },
+  { card: "p1945", stamp: "绕回", loop: true, h: "你绕回了历史", t: "和史实一样，你又拖了几个星期才动身，消息也早已传到莫斯科。等你到了伊斯坦布尔，沃尔科夫已经被苏联方面带走。只是那份伪造的报告，还锁在军情六处的档案柜里。", ph: "照片位：1940 年代的伊斯坦布尔" },
+  { go: "c2go" },
+
+  { label: "c2h" },
+  { act: "volkov" },
+  { card: "p1945", stamp: "史实", h: "1945 年 · 沃尔科夫事件", t: "菲尔比设法接手了此案，又拖了几个星期才动身去伊斯坦布尔。他把消息传给了莫斯科。等他抵达时，沃尔科夫已经被苏联方面带走，从此下落不明。", ph: "照片位：1940 年代的伊斯坦布尔" },
+
+  { label: "c2go" },
+  { n: "沃尔科夫的事平息了。没有人怀疑你，伦敦反而更器重你了。" },
+  { act: "turkey" },
+  { act: "climber" },
+  { card: null, stamp: "史实", h: "1946–1949 · 土耳其", t: "菲尔比 1946 年获颁大英帝国官佐勋章。任驻土耳其站站长期间，他对土苏边境做过全景拍摄勘察，还参与组织了派格鲁吉亚流亡者越境潜入苏联的行动。这些行动都被他提前透露给了莫斯科，越境的人很快被苏联边防军截住，有人当场被打死。" },
+  { chap: "1951", place: "WASHINGTON D.C.", title: "荷 马" },
+  { bg: "office", place: "1951 · 华盛顿", trans: "black" },
+  { fx: { map: ["LONDON", "WASHINGTON"] }, n: "1949 年，你被派往华盛顿，担任军情六处与中情局、联邦调查局之间的联络官。" },
+  { fx: { doc: { title: "宝贵行动 · 绝密", lines: ["英美联合行动", "向阿尔巴尼亚空投流亡者武装", "联络官：H. A. R. PHILBY"], stamp: "绝密" } }, n: "你还经手一项英美联合行动：把训练好的阿尔巴尼亚流亡者空投回国，推翻那里的政权。每一次空投的时间和地点，你都提前交给了莫斯科。" },
+  { act: "albania" },
+  { n: "空投下去的人，大多一落地就被打死或抓走。这件事，你从来没有在回忆录里提过。" },
+  { fx: { telegram: { from: "VENONA · 破译电报", text: "AGENT HOMER BRITISH EMBASSY WASHINGTON", decrypt: true } }, n: "你读到了美国破译的苏联电报，代号「维诺那」。电报里一个代号「荷马」的间谍，范围越缩越小。" },
+  { fx: { doc: { title: "代号「荷马」", lines: ["DONALD MACLEAN", "英国外交官 · 剑桥"], photo: true } }, n: "你知道「荷马」是谁。是你在剑桥的朋友，唐纳德·麦克林。" },
+  { show: "burgess" },
+  { fx: { cam: "in" }, s: "盖伊·伯吉斯", t: "金，我闯的祸太多，要被遣送回伦敦了。", v: "B1" },
+  { s: "盖伊·伯吉斯", t: "你有什么话，需要我带回去吗？", v: "B2" },
+  { choice: "1951", q: "1951 · 第三个决定", h: "要不要冒险救麦克林？", opts: [
+    { t: "让伯吉斯回伦敦，提醒麦克林快走。", go: "c3h", hist: true, sus: 2, fx: { map: ["WASHINGTON", "LONDON"] } },
+    { t: "什么都不说。保住自己最重要。", go: "e3", fx: { heart: true } },
+    { t: "借口述职，亲自飞回伦敦去警告麦克林。", go: "c3c", sus: 3, fx: { map: ["WASHINGTON", "LONDON"] } } ] },
+  { label: "c3c" },
+  { hide: true },
+  { fx: { map: ["WASHINGTON", "LONDON"] }, n: "你借口述职飞回伦敦，在一家俱乐部的后门见到了麦克林。" },
+  { fx: { heart: true }, n: "他脸色发白：「我一个人走不了。我需要有人陪着我，盯着我，别让我半路崩溃。」" },
+  { fx: { doc: { title: "GUY BURGESS", lines: ["英国外交官 · 剑桥", "此刻：伦敦"], photo: true } }, n: "能陪他走的人，只有一个：盖伊·伯吉斯。" },
+  { choice: "1951r", sub: true, q: "补救 · 1951", h: "要不要让伯吉斯陪他一起走？", opts: [
+    { t: "让伯吉斯陪他走。", go: "c3back", fx: { map: ["LONDON", "MOSCOW"] } },
+    { t: "让麦克林一个人走，伯吉斯留下。", go: "e3b", fx: { map: ["DOVER", "CALAIS"] } } ] },
+  { label: "c3back" },
+  { loop: "1951" },
+  { card: "p1951", stamp: "绕回", loop: true, h: "你绕回了历史", t: "结果和史实一样：1951 年 5 月 25 日，伯吉斯陪麦克林一起出逃苏联。因为和伯吉斯走得太近，你被召回伦敦接受调查，被迫从军情六处辞职。区别只是，联邦调查局的档案里多了一条你的航班记录。", ph: "照片位：伯吉斯与麦克林" },
+  { go: "c3go" },
+
+  { label: "c3h" },
+  { hide: true },
+  { fx: { skip: "1951 年 5 月 25 日" }, n: "伦敦。伯吉斯开着一辆租来的车，载着麦克林从乡下一路往南开。去法国的渡轮，午夜开船。" },
+  { act: "southampton" },
+  { fx: { horn: true }, n: "他们赶在收舷梯之前冲上了渡轮，车就扔在码头上。" },
+  { card: "p1951", stamp: "史实", h: "1951 年 5 月 · 出逃", t: "伯吉斯回到伦敦后警告了麦克林。5 月 25 日，两人一起出逃苏联。因为和伯吉斯关系太近，菲尔比被召回伦敦接受调查，并被迫从军情六处辞职。", ph: "照片位：伯吉斯与麦克林" },
+
+  { label: "c3go" },
+  { chap: "1955", place: "LONDON", title: "第 三 人" },
+  { bg: "press", place: "1955 · 伦敦", trans: "black" },
+  { n: "伯吉斯和麦克林出逃以后，这四年发生了很多事。" },
+  { act: "brief55" },
+  { fx: { news: { text: "「没有证据表明菲尔比是第三人」", sub: "外交大臣在下议院表态" } }, n: "11 月 7 日，外交大臣麦克米伦在议会里替你说话：没有证据表明菲尔比就是那个通风报信的「第三人」。" },
+  { fx: { flash: 3 }, n: "记者们已经堵在你母亲家楼下。闪光灯一下一下地亮。" },
+  { show: "reporter" },
+  { fx: { flash: 2 }, s: "记者", t: "菲尔比先生！你就是给伯吉斯和麦克林通风报信的「第三人」吗？", v: "R1" },
+  { choice: "1955", q: "1955 · 第四个决定", h: "门外全是记者。", opts: [
+    { t: "打开门，请他们进来，从容否认。", go: "c4h", hist: true, sus: -1, fx: { flash: 4 } },
+    { t: "从后门离开，先躲到国外去。", go: "c4a", sus: 2, fx: { map: ["LONDON", "ABROAD"] } },
+    { t: "不开门，只让律师发一份书面声明。", go: "c4b", sus: 1, fx: { doc: { title: "声明", lines: ["我的当事人与此事无关。", "他不会接受任何采访。", "此致"] } } } ] },
+  { label: "c4b" },
+  { hide: true },
+  { fx: { news: { text: "「第三人」连门都不敢开", sub: "律师发表三行声明" } }, n: "律师的声明只有三行字。第二天的报纸说，你连门都不敢开。" },
+  { fx: { cam: "out" }, n: "议会里的质询没有停下来，只是换了一种更小心的说法。" },
+  { go: "c4r" },
+  { label: "c4a" },
+  { hide: true },
+  { fx: { news: { text: "「第三人」仓皇出国", sub: "本报讯" } }, n: "第二天的报纸头条：「第三人」仓皇出国。" },
+  { fx: { cam: "out" }, n: "你没有被抓，但军情六处里，相信你的人越来越少了。" },
+  { go: "c4r" },
+  { label: "c4r" },
+  { fx: { skip: "一星期后" }, n: "一个星期后，你收到一张便条，是一位保守党议员写的。" },
+  { fx: { note: "你只要公开露一次面，\n把话说清楚。\n剩下的，交给我。" }, n: "「你只要公开露一次面，把话说清楚。剩下的，我会在议会里替你说。」" },
+  { choice: "1955r", sub: true, q: "补救 · 1955", h: "要不要再站到镜头前？", opts: [
+    { t: "回到母亲的公寓，请记者们进来。", go: "c4back", sus: -2, fx: { flash: 4 } },
+    { t: "继续保持沉默，等风头过去。", go: "c5", sus: 1, fx: { cam: "out" } } ] },
+  { label: "c4back" },
+  { loop: "1955" },
+  { card: "p1955", stamp: "绕回", loop: true, h: "你绕回了历史", t: "迟了一个星期，但和史实一样：你在母亲的公寓里召开记者会，镇定地说，最后一次和一个明知是共产党员的人说话还是在 1934 年。这场表演让你暂时洗清了嫌疑。", ph: "照片位：1955 年记者会" },
+  { go: "c5" },
+  { label: "c4h" },
+  { hide: true },
+  { card: "p1955", stamp: "史实", h: "1955 年 11 月 · 记者会", t: "菲尔比在母亲的公寓里召开记者会，镇定地说，他最后一次和一个明知是共产党员的人说话，还是在 1934 年。这场表演让他暂时洗清了嫌疑。", ph: "照片位：1955 年记者会" },
+
+  { label: "c5" },
+  { fx: { note: "周四晚上十点。\n北区，老地方。", sub: "（一张没有署名的纸条）" }, n: "1956 年春天，莫斯科重新联系上了你。可是军情五处的人，也许还在盯着你。" },
+  { act: "tail", loseSus: 1 },
+  { chap: "1963", place: "BEIRUT", title: "摊 牌" },
+  { bg: "beirut", place: "1963 · 贝鲁特", trans: "black" },
+  { fx: { map: ["LONDON", "BEIRUT"] }, n: "1956 年起，你以《观察家报》和《经济学人》记者的身份住在贝鲁特，暗中又替军情六处做事。" },
+  { fx: { skip: "1963 年 1 月" }, n: "1963 年 1 月。老朋友尼古拉斯·埃利奥特来了。他是军情六处的人，也是这些年最相信你的人之一。" },
+  { show: "elliott" },
+  { fx: { cam: "in" }, s: "尼古拉斯·埃利奥特", t: "金，我们有了新证据。这一次不一样了。", v: "E1" },
+  { if: { sus: 3 }, then: "c5hi", else: "c5lo" },
+  { label: "c5hi" },
+  { fx: { heart: true }, s: "尼古拉斯·埃利奥特", t: "你这些年做的每一件事，现在回头看，都对得上了。", v: "E2" },
+  { go: "c5c" },
+  { label: "c5lo" },
+  { s: "尼古拉斯·埃利奥特", t: "我替你辩护了十几年。现在，我只想听你说实话。", v: "E3" },
+  { label: "c5c" },
+  { fx: { doc: { title: "供词", lines: ["本人 H. A. R. PHILBY 承认……", "……", "签名："] } }, s: "尼古拉斯·埃利奥特", t: "签一份完整的供词，交代所有事情。我可以保证你不用坐牢。", v: "E4" },
+  { choice: "1963", q: "1963 · 最后一个决定", h: "埃利奥特在等你的回答。", opts: [
+    { t: "只承认一部分，拖住他，然后找机会消失。", go: "c6h", hist: true, fx: { doc: { title: "供词（部分）", lines: ["本人承认……", "……", "……"], redact: true } } },
+    { t: "全部招供，接受伦敦开出的条件。", go: "e5", fx: { doc: { title: "供词", lines: ["本人承认以上全部内容属实。"], sign: true } } },
+    { t: "否认一切，客气地请他离开。", go: "e6", fx: { cam: "out" } },
+    { t: "谁都不投靠。今晚就带着备用护照，离开贝鲁特。", go: "e7", fx: { doc: { title: "护照", lines: ["姓名：J. ██████", "国籍：英国", "签发：1959"], photo: true } } } ] },
+
+  { label: "c6h" },
+  { hide: true },
+  { fx: { rain: true }, n: "1 月 23 日晚上，雨下得很大。你原本要去朋友家赴晚宴。" },
+  { n: "你没有出现。你穿过雨，走向港口。" },
+  { act: "port" },
+  { fx: { horn: true }, n: "汽笛响了一声。苏联货船「多尔马托瓦号」离开了贝鲁特。" },
+  { card: "p1963", stamp: "史实", h: "1963 年 · 消失", t: "1963 年 1 月 23 日，菲尔比在贝鲁特失踪，据信登上了一艘苏联货船。同年 7 月，苏联宣布给予他政治庇护。他在莫斯科度过余生，1988 年去世。", ph: "照片位：贝鲁特港" },
+  { end: "H", title: "第三人", desc: "你做出了和历史上的金·菲尔比一样的每一个决定。三十年里，他骗过了几乎所有信任他的人，最后在莫斯科度过余生。", kind: "历史结局" },
+
+  { label: "e7" },
+  { hide: true },
+  { fx: { rain: true }, n: "你没有回家。你走进港口边一家小旅馆，从床板下面取出一本护照。上面的名字不是你的。" },
+  { fx: { cam: "in" }, n: "莫斯科在等你上船，伦敦在等你签字。你两边都不打算去。" },
+  { choice: "1963x", sub: true, q: "出逃路线", h: "天亮之前，你必须离开贝鲁特。", opts: [
+    { t: "搭一艘希腊货轮，去比雷埃夫斯。", go: "e7a", fx: { map: ["BEIRUT", "PIRAEUS"] } },
+    { t: "坐夜班车翻过山，去大马士革。", go: "e7b", fx: { map: ["BEIRUT", "DAMASCUS"] } } ] },
+  { label: "e7a" },
+  { fx: { horn: true }, n: "货轮在黎明时分起锚。船长只收现金，不问名字。" },
+  { go: "e7c" },
+  { label: "e7b" },
+  { fx: { cam: "right" }, n: "边境哨卡的士兵翻了翻你的护照，打了个哈欠，挥手放行。" },
+  { label: "e7c" },
+  { fx: { news: { text: "英国记者菲尔比在贝鲁特失踪", sub: "去向不明" } }, n: "三天后，报纸登出了你失踪的消息。伦敦以为你去了莫斯科，莫斯科以为你落到了英国人手里。" },
+  { fx: { skip: "很多年后" }, n: "谁也没有找到你。" },
+  { card: null, stamp: "改写", alt: true, h: "如果他谁都不投靠", t: "历史上，菲尔比登上了苏联货船，去了莫斯科。他在那里的生活远不如他想象的风光，长期处在克格勃的监视之下。在这条路线里，你两边都没有选。" },
+  { end: "A6", title: "无人知晓", desc: "你成功逃脱了，既没有回伦敦，也没有去莫斯科。很多年后，地中海边一座小镇上，有个英国老人每天坐在码头上读报，从不提起自己的过去。", kind: "改写结局 · 成功逃脱" },
+
+  /* ======================= 苏联线（虚构）：1945 年就投奔莫斯科 ======================= */
+  { label: "s0" },
+  { fx: { knock: true }, n: "当天夜里，你敲响了苏联领事馆的后门。三长，两短。" },
+  { fx: { telegram: { from: "ISTANBUL → MOSCOW", text: "SOHNCHEN REQUESTS EVACUATION TONIGHT STOP", decrypt: true } }, n: "一封加急电报发往莫斯科。回电只有一个词：同意。" },
+  { fx: { map: ["ISTANBUL", "ODESSA"] }, n: "第二天清晨，你躺在一艘苏联货轮的煤舱里，穿过了博斯普鲁斯海峡。" },
+  { fx: { news: { text: "英国外交官在伊斯坦布尔失踪", sub: "军情六处拒绝置评" } }, n: "三天后，沃尔科夫顺利到了伦敦。他交出的名单上，第一个名字就是你。只是你已经不在了。" },
+  { card: null, stamp: "改写", alt: true, h: "如果他在 1945 年就去了莫斯科", t: "历史上，菲尔比拖住了沃尔科夫，又在军情六处潜伏了十八年，1963 年才去莫斯科。在这条路线里，你提前十八年投奔了苏联。从这里开始，后面的故事都是虚构的。" },
+
+  { chap: "1951", place: "MOSCOW", title: "莫 斯 科 之 冬" },
+  { bg: "moscow", place: "1951 · 莫斯科", trans: "black" },
+  { fx: { skip: "六年后" }, n: "1951 年 1 月。你在莫斯科已经住了六年。公寓很暖和，楼下永远站着一个人。" },
+  { fx: { doc: { title: "国家安全部 · 内部档案", lines: ["对象：SÖHNCHEN（费奥多罗夫）", "状态：受保护", "备注：可信度待核实"], hl: 2 } }, n: "你的新名字叫「费奥多罗夫」。你的档案上，有一行字被红笔圈了出来。" },
+  { fx: { news: { text: "外交官麦克林、伯吉斯被捕", sub: "据信涉及苏联间谍案" } }, n: "沃尔科夫的名单在伦敦起了作用。麦克林和伯吉斯先后被捕，剑桥的朋友们一个接一个进了监狱。" },
+  { show: "colonel" },
+  { fx: { cam: "in" }, s: "沃罗宁上校", t: "菲尔比同志，你来得太容易了。英国人连追都没有追。", v: "C1" },
+  { s: "沃罗宁上校", t: "上面有人认为，你从头到尾都是伦敦派来的。", v: "C2" },
+  { fx: { heart: true }, me: "十一年。我替他们骗了所有人十一年。" },
+  { s: "沃罗宁上校", t: "所以你得证明给我们看。今天就证明。", v: "C3" },
+  { choice: "1951", line: "S", q: "1951 · 第三个决定", h: "你要怎样证明自己？", opts: [
+    { t: "交出你记得的每一个英国特工的名字。", go: "s1a", sus: -1, fx: { doc: { title: "名单", lines: ["华沙 · ……", "布拉格 · ……", "布达佩斯 · ……"], redact: true } } },
+    { t: "「派我回西方去。让我在前线证明给你们看。」", go: "s1b", sus: 1, fx: { map: ["MOSCOW", "BERLIN"] } },
+    { t: "「我不需要证明。是你们欠我的。」", go: "s1c", sus: 2, fx: { cam: "out" } } ] },
+  { label: "s1a" },
+  { fx: { doc: { title: "名单", lines: ["华沙 · ……", "布拉格 · ……", "布达佩斯 · ……", "共 43 人"], redact: true } }, n: "你写了整整一夜。四十三个名字，每一个后面，都是一个在东欧活着的人。" },
+  { fx: { stamp: "可信" }, s: "沃罗宁上校", t: "很好。从今天起，没有人会再怀疑你了。", v: "C4" },
+  { hide: true },
+  { fx: { cam: "out" }, n: "几个月后，你听说那些名字里的人，一个接一个地消失了。你没有再问。" },
+  { go: "s2" },
+  { label: "s1b" },
+  { s: "沃罗宁上校", t: "回西方？你在西方已经是通缉犯了。", v: "C5" },
+  { fx: { cam: "in" }, s: "沃罗宁上校", t: "不过，柏林正好缺一个懂英国人的人。", v: "C6" },
+  { go: "s2" },
+  { label: "s1c" },
+  { hide: true },
+  { fx: { knock: true }, n: "那天晚上，敲门的是两个穿便衣的人。" },
+  { act: "arrest", win: "s1cw", lose: "s1cl" },
+  { label: "s1cw" },
+  { n: "你撞开了一个，冲到楼梯口。第三个人在楼下等着你，枪口对着你的胸口。" },
+  { go: "s1cx" },
+  { label: "s1cl" },
+  { n: "你还没站稳，就被按在了地板上。" },
+  { label: "s1cx" },
+  { fx: { map: ["MOSCOW", "VORKUTA"] }, n: "你被送上一列向北开的火车。终点是沃尔库塔，北极圈里的劳改营。" },
+  { fx: { skip: "两年后" }, n: "1953 年 3 月，斯大林死了。营地的广播放了一整天哀乐。" },
+  { fx: { note: "写一份检讨，\n承认你的骄傲，\n然后回来工作。", sub: "（沃罗宁上校的信）" }, n: "一个月后，你收到一封信，是沃罗宁上校写的。" },
+  { choice: "1951r", sub: true, line: "S", q: "补救 · 1953", h: "要不要低头？", opts: [
+    { t: "写检讨。活下去比体面重要。", go: "s1back", sus: -2, fx: { doc: { title: "检讨书", lines: ["本人过去态度骄傲……", "辜负了组织的信任……"], sign: true } } },
+    { t: "不写。", go: "se3", fx: { cam: "out" } } ] },
+  { label: "s1back" },
+  { loop: "1951" },
+  { fx: { map: ["VORKUTA", "BERLIN"], slow: true }, n: "1953 年夏天，你回到莫斯科。上校在车站等你，什么都没说，只递给你一张去柏林的火车票。" },
+
+  { label: "s2" },
+  { chap: "1955", place: "BERLIN", title: "隧 道" },
+  { bg: "berlin", place: "1955 · 东柏林", trans: "black" },
+  { fx: { doc: { title: "克格勃 · 柏林站", lines: ["对付目标：英国秘密情报局", "负责人：费奥多罗夫"] } }, n: "1955 年。你在东柏林的克格勃站，专门对付你的老东家。" },
+  { fx: { telegram: { from: "LONDON → MOSCOW", text: "TUNNEL OPERATIONAL SOURCE DIOMID CONFIRMS", decrypt: true } }, n: "莫斯科在伦敦有一个新内线，代号「狄奥米德」。他说，英国人和美国人在柏林地下挖了一条隧道，正在偷听苏军的电话。" },
+  { fx: { cam: "right" }, n: "那天傍晚，你在边界附近的一家咖啡馆里，看见了一个熟悉的背影。" },
+  { show: "elliott" },
+  { s: "尼古拉斯·埃利奥特", t: "金。十年了，你一点都没变。", v: "E6" },
+  { fx: { cam: "in" }, s: "尼古拉斯·埃利奥特", t: "我不是来抓你的。伦敦想知道，你愿不愿意回家。", v: "E7" },
+  { fx: { heart: true }, me: "他还不知道，隧道的事早就暴露了。" },
+  { choice: "1955", line: "S", q: "1955 · 第四个决定", h: "隧道和老朋友，你先处理哪一个？", opts: [
+    { t: "什么都不动，让隧道继续挖。往里面喂假情报，保护「狄奥米德」。", go: "s2a", sus: -1, fx: { telegram: { from: "BERLIN → MOSCOW", text: "LET THEM LISTEN STOP" } } },
+    { t: "在餐巾纸上写一行字递给埃利奥特：隧道暴露了。给自己留一条回家的路。", go: "s2b", sus: 2, set: { home: 1 }, fx: { note: "隧道\n已经暴露。", sub: "（写在餐巾纸上）" } },
+    { t: "当晚就带人挖开隧道，向莫斯科邀功。", go: "s2c", sus: 1, fx: { flash: 2 } } ] },
+  { label: "s2a" },
+  { s: "尼古拉斯·埃利奥特", t: "我会再来的。你知道怎么找到我。", v: "E8" },
+  { hide: true },
+  { fx: { cam: "out" }, n: "隧道又挖了一年。伦敦和华盛顿听到的每一通电话，都是你们安排好的。" },
+  { go: "s2card" },
+  { label: "s2b" },
+  { s: "尼古拉斯·埃利奥特", t: "……谢谢你，金。这个人情，伦敦会记住的。", v: "E9" },
+  { hide: true },
+  { fx: { cam: "right" }, n: "你走出咖啡馆。街对面，一辆黑色轿车亮起了车灯。是东德国家安全部的人。" },
+  { act: "berlin", lose: "s2bl", loseSus: 2 },
+  { n: "你甩掉了他们，从另一个哨卡回到了东区。没有人知道你见过谁。" },
+  { go: "s2bx" },
+  { label: "s2bl" },
+  { fx: { knock: true }, n: "他们在哨卡前截住了你。第二天早上，上校知道了你和一个英国人喝过咖啡。" },
+  { label: "s2bx" },
+  { fx: { cam: "out" }, n: "一个月后，英国人悄悄停用了隧道。莫斯科开始调查：是谁走漏了风声？调查没有查到你。" },
+  { label: "s2card" },
+  { card: "pBerlin", stamp: "史实", h: "1954–1956 · 柏林隧道", t: "柏林隧道是真的。英美情报机构挖了这条隧道，窃听苏军电话。但苏联从一开始就知道：军情六处的乔治·布莱克（代号「狄奥米德」）早已泄密。为了保护布莱克，苏联让隧道运行了将近一年，才「意外发现」了它。", ph: "照片位：柏林隧道" },
+  { go: "s3" },
+  { label: "s2c" },
+  { hide: true },
+  { fx: { flash: 3 }, n: "凌晨三点，苏军工兵挖开了隧道的东端。探照灯下，一排排窃听设备还在运转。" },
+  { act: "tunnel" },
+  { n: "两个来不及撤走的技术员倒在电缆旁边。剩下的人，从西边的出口逃走了。" },
+  { fx: { news: { text: "西方在柏林地下挖窃听隧道", sub: "苏联提出强烈抗议" } }, n: "你上了《真理报》的头版。可是一个星期后，伦敦开始排查：到底是谁知道隧道的事？" },
+  { fx: { telegram: { from: "LONDON", text: "DIOMID ARRESTED STOP", decrypt: true } }, n: "「狄奥米德」被捕了。莫斯科在伦敦最值钱的内线，因为你的邀功，暴露了。" },
+  { show: "colonel" },
+  { fx: { cam: "in" }, s: "沃罗宁上校", t: "你知道你毁掉的是什么吗？", v: "C7" },
+  { choice: "1955r", sub: true, line: "S", q: "补救 · 1955", h: "上校在等你的解释。", opts: [
+    { t: "「是我的错。让我把损失补回来。」", go: "s2back", sus: -1, fx: { stamp: "处分" } },
+    { t: "「隧道是我发现的。功劳也是我的。」", go: "se3b", fx: { cam: "out" } } ] },
+  { label: "s2back" },
+  { loop: "1955" },
+  { s: "沃罗宁上校", t: "……留在柏林。下一次，先问我。", v: "C8" },
+  { hide: true },
+  { go: "s3" },
+
+  { label: "s3" },
+  { chap: "1963", place: "GLIENICKE BRIDGE", title: "交 换" },
+  { bg: "bridge", place: "1963 · 格利尼克桥", trans: "black" },
+  { fx: { skip: "1963 年 2 月" }, n: "1963 年 2 月，凌晨。柏林和波茨坦之间的格利尼克桥，被大雾盖住了一半。" },
+  { fx: { doc: { title: "交换协议", lines: ["苏方交出：H. A. R. PHILBY", "英方交出：一名苏联特工", "地点：桥中央白线"], stamp: "绝密" } }, n: "两边谈好了一笔交换：用你，换回一个被英国关押的苏联特工。" },
+  { if: { home: 1 }, then: "s3hi", else: "s3lo" },
+  { label: "s3hi" },
+  { n: "伦敦记得柏林的那张餐巾纸。是他们点名要你。" },
+  { go: "s3c" },
+  { label: "s3lo" },
+  { n: "莫斯科觉得你已经没用了。用你换回一个年轻的特工，很划算。" },
+  { label: "s3c" },
+  { show: "colonel" },
+  { s: "沃罗宁上校", t: "走到桥中间那条白线。过了线，你就是他们的人了。", v: "C9" },
+  { fx: { doc: { title: "信封", lines: ["若过桥，交给英方。"], stamp: "密封" } }, s: "沃罗宁上校", t: "如果你决定过去，把这个交给他们。就当是你送给伦敦的见面礼。", v: "C10" },
+  { s: "沃罗宁上校", t: "或者你现在转身，我就当没有这份协议。", v: "C11" },
+  { hide: true },
+  { fx: { cam: "in" }, n: "雾的另一头，站着一个戴眼镜的人。是埃利奥特。" },
+  { show: "elliott" },
+  { s: "尼古拉斯·埃利奥特", t: "金，过来吧。这一次，是真的回家。", v: "E10" },
+  { choice: "1963", line: "S", q: "1963 · 最后一个决定", h: "白线就在你脚下。", opts: [
+    { t: "空着手跨过白线，回英国。", go: "se1", fx: { map: ["BERLIN", "LONDON"] } },
+    { t: "跨过白线，把上校的信封交给埃利奥特。", go: "se4", fx: { doc: { title: "信封", lines: ["克格勃西欧联络网", "共 11 人"], stamp: "密封" } } },
+    { t: "转身，回莫斯科。", go: "se2", fx: { cam: "out" } } ] },
+
+  { label: "se1" },
+  { hide: true },
+  { fx: { cam: "in" }, n: "你跨过了白线。埃利奥特握住你的手，很用力，然后松开。" },
+  { fx: { news: { text: "叛逃者菲尔比在老贝利受审", sub: "被控叛国罪" } }, n: "伦敦没有忘记 1945 年的那份名单。等着你的是一场审判。" },
+  { card: null, stamp: "改写", alt: true, h: "如果他回了英国", t: "历史上，真正的苏联内线乔治·布莱克 1961 年在伦敦受审，被判四十二年监禁，创下英国的纪录。五年后，他越狱逃到了莫斯科。" },
+  { end: "S1", line: "S", title: "桥的那一头", desc: "你回到了英国，换来一场审判和一间牢房。每年冬天，你都会梦见那座桥，梦里你总是停在白线上。", kind: "苏联线结局" },
+
+  { label: "se4" },
+  { hide: true },
+  { fx: { doc: { title: "信封", lines: ["克格勃西欧联络网", "共 11 人"], stamp: "密封" } }, n: "你跨过白线，把信封交给埃利奥特：「这是克格勃在西欧的名单。」" },
+  { fx: { skip: "半年后" }, n: "伦敦按名单抓了十一个人。半年后他们发现，十一个人里，没有一个是苏联间谍。" },
+  { fx: { heart: true }, me: "信封是上校给的。从他送我上桥的那一刻起，我就只是莫斯科的最后一份假情报。" },
+  { card: null, stamp: "改写", alt: true, h: "如果他是一颗毒饵", t: "冷战时期，双方都怀疑过对方派来「假叛逃者」，带着真假掺杂的情报来搅乱判断。1964 年投奔美国的苏联人诺先科，中情局为他是真是假争了好几年。" },
+  { end: "S4", line: "S", title: "最后的任务", desc: "你以为自己终于回家了。其实送你过桥，就是莫斯科交给你的最后一个任务。从那以后，伦敦再也不相信任何从东边走过来的人。", kind: "苏联线结局" },
+
+  { label: "se2" },
+  { hide: true },
+  { fx: { cam: "out" }, n: "你转过身，走回雾里。身后，埃利奥特没有喊你的名字。" },
+  { show: "colonel" },
+  { s: "沃罗宁上校", t: "欢迎回家，费奥多罗夫同志。", v: "C12" },
+  { hide: true },
+  { card: "pMoscow", stamp: "史实", h: "1963–1988 · 莫斯科", t: "历史上，菲尔比 1963 年才到莫斯科，在那里住了二十五年，1988 年去世，葬礼上有克格勃的仪仗队。1990 年，苏联发行了一枚印着他头像的邮票。", ph: "照片位：莫斯科红场" },
+  { end: "S2", line: "S", title: "红场的雪", desc: "你在莫斯科教了二十五年书，教年轻人怎么骗英国人。你死后，苏联为你印了一枚邮票。邮票上的你，看起来很像一个真正的苏联人。", kind: "苏联线结局", music: "endH" },
+
+  { label: "se3" },
+  { fx: { skip: "很多年后" }, n: "你没有写。营地的冬天有九个月那么长。" },
+  { go: "se3end" },
+  { label: "se3b" },
+  { hide: true },
+  { fx: { map: ["BERLIN", "VORKUTA"] }, n: "第二天早上，来接你的车没有开往机场，而是开往火车站。终点是沃尔库塔。" },
+  { label: "se3end" },
+  { card: null, stamp: "改写", alt: true, h: "如果莫斯科抛弃了他", t: "这不是凭空想象：二战期间，苏联情报机构确实一度怀疑剑桥五人组是英国派来的双面间谍，因为他们的情报「好得不像真的」。许多替苏联工作过的外国人，最后死在了劳改营里。" },
+  { end: "S3", line: "S", title: "沃尔库塔", desc: "你替莫斯科骗了英国十一年，最后却死在了苏联的劳改营里。你的档案上，那行用红笔圈出来的字，一直没有被划掉。", kind: "苏联线结局" },
+
+  /* ======================= 双面线（架空）：同时替两边工作，两边都不知情 ======================= */
+  { label: "d0" },
+  { fx: { telegram: { from: "ISTANBUL → MOSCOW", text: "VOLKOV INTENDS TO DEFECT ACT NOW STOP" } }, n: "当天晚上，你给莫斯科发了一封电报：沃尔科夫要叛逃，动手吧。" },
+  { fx: { doc: { title: "致局长", lines: ["苏联在伊斯坦布尔的联络员", "代号：「水手」", "接头地点：加拉塔桥下"], stamp: "绝密" } }, n: "同一天晚上，你又给伦敦写了一份报告：苏联在伊斯坦布尔的一个联络员是谁，在哪里接头。" },
+  { fx: { heart: true }, me: "莫斯科以为我在救它，伦敦以为我在替它抓人。他们都没错，也都错了。" },
+  { fx: { skip: "两周后" }, n: "沃尔科夫被苏联人带走了。「水手」在加拉塔桥下被捕。两边都给你发来了嘉奖。" },
+  { card: null, stamp: "改写", alt: true, h: "如果他两头下注", t: "历史上，菲尔比对莫斯科是忠诚的，从没主动出卖过苏联的人。在这条路线里，你谁都不忠诚：你同时替两边工作，而两边都以为你只属于自己。从这里开始，后面的故事都是架空的。" },
+
+  { chap: "1951", place: "WASHINGTON D.C.", title: "两 边 要 人" },
+  { bg: "office", place: "1951 · 华盛顿", trans: "black" },
+  { fx: { map: ["LONDON", "WASHINGTON"] }, n: "1951 年，你在华盛顿当联络官。伦敦给的薪水加上莫斯科给的报酬，比局长挣得还多。" },
+  { fx: { telegram: { from: "VENONA · 破译电报", text: "AGENT HOMER BRITISH EMBASSY WASHINGTON", decrypt: true } }, n: "美国人破译了苏联的电报。代号「荷马」的间谍，范围越缩越小。你知道，荷马就是麦克林。" },
+  { show: "colonel" },
+  { fx: { cam: "in" }, s: "沃罗宁上校", t: "莫斯科要你保住荷马。不惜代价。", v: "C13" },
+  { hide: true },
+  { show: "elliott" },
+  { s: "尼古拉斯·埃利奥特", t: "伦敦要你把荷马找出来。局长说，这件事只信得过你。", v: "E11" },
+  { fx: { heart: true }, me: "两边都在等我。两边都只信得过我。" },
+  { choice: "1951", line: "D", q: "1951 · 第三个决定", h: "麦克林，你交给谁？", opts: [
+    { t: "两边都给：让伯吉斯去报信，再把出逃时间晚一天报给伦敦。", go: "d1a", sus: 1, fx: { map: ["WASHINGTON", "LONDON"] } },
+    { t: "交给伦敦。亲手递上麦克林的名字。", go: "d1b", sus: 2, fx: { doc: { title: "致局长", lines: ["荷马 = DONALD MACLEAN"], hl: 0, stamp: "绝密" } } },
+    { t: "先别给。两边都抬抬价。", go: "d1c", sus: 2, fx: { note: "价钱\n还可以再谈。" } } ] },
+  { label: "d1a" },
+  { hide: true },
+  { fx: { map: ["LONDON", "CALAIS"] }, n: "5 月 25 日夜里，麦克林和伯吉斯坐上了去法国的渡轮。" },
+  { fx: { telegram: { from: "WASHINGTON → LONDON", text: "HOMER LIKELY MACLEAN RECOMMEND ARREST 26 MAY STOP" } }, n: "你给伦敦的报告上写着：建议 5 月 26 日逮捕麦克林。晚了一天。" },
+  { fx: { stamp: "嘉奖 × 2" }, n: "莫斯科感谢你救了荷马。伦敦称赞你差一点就抓住了他。" },
+  { card: "p1951", stamp: "史实", h: "1951 年 5 月 · 出逃", t: "历史上，麦克林和伯吉斯确实在 5 月 25 日出逃，第二天军情五处原本就要审问麦克林。不同的是，历史上的菲尔比因为和伯吉斯走得太近，被迫辞职；在这条路线里，你算准了时间，两边都没有怀疑你。", ph: "照片位：伯吉斯与麦克林" },
+  { go: "d2" },
+  { label: "d1b" },
+  { set: { mac: 1 } },
+  { hide: true },
+  { fx: { news: { text: "外交官麦克林被捕", sub: "据信是苏联间谍「荷马」" } }, n: "麦克林在伦敦被捕。军情六处的局长亲自打电话给你道贺。" },
+  { show: "colonel" },
+  { s: "沃罗宁上校", t: "荷马被捕的前一天，只有三个人知道他是谁。你是其中一个。", v: "C14" },
+  { fx: { heart: true }, me: "莫斯科开始怀疑我了。" },
+  { hide: true },
+  { card: null, stamp: "改写", alt: true, h: "如果他出卖了麦克林", t: "历史上，菲尔比冒险救了麦克林。在这条路线里，你牺牲了一个剑桥的朋友，换来伦敦的信任。从这一刻起，莫斯科看你的眼神不一样了。" },
+  { go: "d2" },
+  { label: "d1c" },
+  { fx: { skip: "一周后" }, n: "你对莫斯科说，你要一笔钱和一本瑞士护照。你对伦敦说，你要更高的级别。" },
+  { show: "colonel" },
+  { fx: { cam: "in" }, s: "沃罗宁上校", t: "你在跟谁讨价还价？", v: "C15" },
+  { hide: true },
+  { fx: { telegram: { from: "FBI · 内部", text: "ALL PERSONNEL WITH HOMER ACCESS UNDER REVIEW", decrypt: true } }, n: "就在你等两边回话的时候，联邦调查局先动手了：所有知道「荷马」的人，都要接受审查。" },
+  { choice: "1951r", sub: true, line: "D", q: "补救 · 1951", h: "价钱谈不成了。", opts: [
+    { t: "收手。按原计划，两边都给。", go: "d1back", sus: -1, fx: { map: ["WASHINGTON", "LONDON"] } },
+    { t: "继续抬价。他们离不开我。", go: "de4", fx: { cam: "out" } } ] },
+  { label: "d1back" },
+  { loop: "1951" },
+  { go: "d1a" },
+
+  { label: "d2" },
+  { chap: "1955", place: "LONDON", title: "两 通 电 话" },
+  { bg: "press", place: "1955 · 伦敦", trans: "black" },
+  { n: "1951 年以后，这四年发生了很多事。" },
+  { if: { mac: 1 }, then: "d2m", else: "d2e" },
+  { label: "d2m" },
+  { act: "brief55m" },
+  { go: "d2n" },
+  { label: "d2e" },
+  { act: "brief55e" },
+  { label: "d2n" },
+  { fx: { flash: 3 }, n: "记者堵在你母亲家楼下。那天夜里，电话响了两次。" },
+  { show: "elliott" },
+  { fx: { cam: "in" }, s: "尼古拉斯·埃利奥特", t: "金，局里有人要把你交出去。给我们一个苏联人的名字，我就能保住你。", v: "E12" },
+  { hide: true },
+  { fx: { cam: "right" }, n: "第二通电话，是一个没有口音的声音。" },
+  { show: "colonel" },
+  { s: "沃罗宁上校", t: "英国人开始怀疑你了。给我们一个英国人的名字，我们帮你洗清。", v: "C16" },
+  { fx: { heart: true }, me: "两边要的东西一模一样：一个名字。" },
+  { choice: "1955", line: "D", q: "1955 · 第四个决定", h: "这一次，你卖谁？", opts: [
+    { t: "两边都卖：给伦敦一个苏联联络员，给莫斯科一个英国特工。", go: "d2a", sus: 1, fx: { doc: { title: "两份名单", lines: ["致伦敦：……", "致莫斯科：……"], redact: true } } },
+    { t: "请莫斯科在报纸上骂你一顿：骂你是英国特务。", go: "d2b", sus: -1, fx: { news: { text: "塔斯社：菲尔比是英国特务", sub: "莫斯科电" } } },
+    { t: "谁都不卖。打开门，对记者从容否认。", go: "d2c", fx: { flash: 4 } } ] },
+  { label: "d2a" },
+  { hide: true },
+  { fx: { doc: { title: "苏联商务代表处", lines: ["伦敦 · 海格特", "二楼 · 保险柜", "联络人名单"] } }, n: "伦敦要一个苏联人的名字。你知道苏联商务代表处二楼的保险柜里，有一份联络人名单。" },
+  { act: "heist", loseSus: 2 },
+  { fx: { skip: "一个月后" }, n: "一个月后，维也纳有一个苏联联络员被捕，布拉格有一个英国特工失踪。两边都觉得自己赢了一局。" },
+  { fx: { cam: "in" }, me: "只有我知道，这一局是我赢的。" },
+  { go: "d3" },
+  { label: "d2b" },
+  { hide: true },
+  { fx: { news: { text: "塔斯社：菲尔比是英国特务", sub: "伦敦各报转载" } }, n: "塔斯社的电讯说，你是英国派到中东的「帝国主义特务」。第二天，伦敦的报纸全都转载了。" },
+  { n: "军情六处的人笑了：苏联人这么恨他，他怎么可能是苏联间谍？" },
+  { card: null, stamp: "改写", alt: true, h: "如果莫斯科替他演戏", t: "历史上，菲尔比靠在母亲公寓里的一场记者会洗清了嫌疑。在这条路线里，你让敌人替你作证。这一招很漂亮，但也让莫斯科手里多了一个把柄。" },
+  { go: "d3" },
+  { label: "d2c" },
+  { hide: true },
+  { card: "p1955", stamp: "史实", h: "1955 年 11 月 · 记者会", t: "这一步和史实一样：菲尔比在母亲的公寓里召开记者会，镇定地否认一切，暂时洗清了嫌疑。只是在这条路线里，你挂掉电话的时候，两边都没有拿到想要的名字。", ph: "照片位：1955 年记者会" },
+
+  { label: "d3" },
+  { chap: "1963", place: "BEIRUT", title: "两 张 桌 子" },
+  { bg: "beirut", place: "1963 · 贝鲁特", trans: "black" },
+  { fx: { map: ["LONDON", "BEIRUT"] }, n: "1963 年 1 月，贝鲁特。你还是记者，还在替两边做事。" },
+  { fx: { doc: { title: "今晚", lines: ["20:00 · 圣乔治饭店 · 埃利奥特", "20:30 · 港口酒吧 · 上校"] } }, n: "今晚有两个约会，相隔半小时，相隔两条街。" },
+  { show: "elliott" },
+  { fx: { cam: "in" }, s: "尼古拉斯·埃利奥特", t: "金，我们在莫斯科有了新线人。他说，苏联在中东的网，全靠一个英国人撑着。", v: "E13" },
+  { if: { sus: 3 }, then: "d3hi", else: "d3lo" },
+  { label: "d3hi" },
+  { fx: { heart: true }, s: "尼古拉斯·埃利奥特", t: "我希望那个人不是你。", v: "E14" },
+  { go: "d3m" },
+  { label: "d3lo" },
+  { s: "尼古拉斯·埃利奥特", t: "帮我把他找出来。这件事，我只信得过你。", v: "E15" },
+  { label: "d3m" },
+  { hide: true },
+  { fx: { skip: "半小时后" }, n: "半小时后，港口酒吧。" },
+  { show: "colonel" },
+  { s: "沃罗宁上校", t: "伦敦有人在打听你。我们有一艘船，明晚开。", v: "C17" },
+  { s: "沃罗宁上校", t: "上船之前，把军情六处在中东的名单交给我。", v: "C18" },
+  { fx: { heart: true }, me: "埃利奥特要莫斯科的名单，上校要伦敦的名单。两份名单，都锁在我的保险箱里。" },
+  { choice: "1963", line: "D", q: "1963 · 最后一个决定", h: "保险箱里有两份名单。", opts: [
+    { t: "把莫斯科的名单交给埃利奥特，跟他回伦敦。", go: "de1", fx: { map: ["BEIRUT", "LONDON"] } },
+    { t: "把伦敦的名单交给上校，上船去莫斯科。", go: "de2", fx: { horn: true, map: ["BEIRUT", "ODESSA"] } },
+    { t: "两份名单，同时卖给对方。然后消失。", go: "de3", fx: { doc: { title: "两份名单", lines: ["→ 伦敦", "→ 莫斯科"], sign: true } } } ] },
+
+  { label: "de1" },
+  { hide: true },
+  { fx: { doc: { title: "苏联中东联络网", lines: ["贝鲁特 · ……", "开罗 · ……", "大马士革 · ……"], redact: true } }, n: "你把名单交了出去。三个月里，苏联在中东的七个联络站被一一拔掉。" },
+  { fx: { cam: "out" }, n: "伦敦给了你一个新名字，和乡下的一栋房子。你每天早上出门前，都要先检查车底。" },
+  { card: null, stamp: "改写", alt: true, h: "如果他选了伦敦", t: "历史上，菲尔比从没出卖过苏联。他去了莫斯科，后来很失望：他以为自己会是克格勃的将军，其实只是一个被监视的退休特工。" },
+  { end: "D1", line: "D", title: "伦敦的功臣", desc: "你成了军情六处最大的功臣，但只有六个人知道。克格勃找了你二十八年，直到苏联解体那年，你才敢第一次在花园里晒太阳。", kind: "双面线结局", music: "endH" },
+
+  { label: "de2" },
+  { hide: true },
+  { fx: { rain: true }, n: "1 月 23 日晚上，雨下得很大。你没有去朋友家的晚宴。" },
+  { fx: { horn: true }, n: "你登上了那艘苏联货船。口袋里，是军情六处在中东的全部联络人。" },
+  { card: "p1963", stamp: "史实", h: "1963 年 · 消失", t: "这一夜和史实一样：1963 年 1 月 23 日，菲尔比在贝鲁特失踪，登上了一艘苏联货船。只是在这条路线里，你带走的不只是你自己。", ph: "照片位：贝鲁特港" },
+  { end: "D2", line: "D", title: "莫斯科的勋章", desc: "你在莫斯科拿到了列宁勋章。他们给了你一套大公寓，也给你派了一个永远不走的司机。你知道为什么：能出卖伦敦的人，也能出卖莫斯科。", kind: "双面线结局" },
+
+  { label: "de3" },
+  { if: { sus: 4 }, then: "de3x", else: "de3ok" },
+  { label: "de3ok" },
+  { hide: true },
+  { fx: { doc: { title: "两份名单", lines: ["20:00 → 埃利奥特的报纸", "20:30 → 上校的雪茄盒"] } }, n: "八点，你把莫斯科的名单夹进埃利奥特的报纸里。八点半，你把伦敦的名单放进上校的雪茄盒。" },
+  { n: "八点四十五分，你开车冲向机场。后视镜里，两辆车同时亮起了车灯：一辆是英国人的，一辆是苏联人的。" },
+  { act: "coast", win: "de3fly", lose: "de3crash" },
+  { label: "de3crash" },
+  { fx: { cam: "out" }, n: "车冲出公路，撞上了护栏。你从车里爬出来的时候，追你的人已经下了车。" },
+  { go: "de3fight" },
+  { label: "de3fly" },
+  { fx: { map: ["BEIRUT", "GENEVA"] }, n: "九点，你坐上了去日内瓦的夜班飞机。瑞士银行的账户，你早在 1951 年就开好了。" },
+  { fx: { news: { text: "英国记者菲尔比在贝鲁特失踪", sub: "英苏双方均拒绝置评" } }, n: "伦敦以为你去了莫斯科，莫斯科以为你去了伦敦。两边都在等你，两边都没有等到。" },
+  { card: null, stamp: "改写", alt: true, h: "如果他谁都不忠诚", t: "历史上，一直有人猜测菲尔比其实是三面间谍，替英国反过来监视苏联。但解密的档案并不支持这种说法：他自始至终是苏联的人。这条路线，是历史上从没发生过的那个版本。" },
+  { end: "D3", line: "D", title: "真正的第三人", desc: "两边都以为你属于自己，其实你谁的都不是。很多年后，日内瓦湖边有个老人，每天下午都在同一张长椅上喂天鹅。", kind: "双面线结局 · 成功脱身", music: "endH" },
+  { label: "de3x" },
+  { hide: true },
+  { n: "八点，你把莫斯科的名单夹进埃利奥特的报纸里。" },
+  { fx: { knock: true }, n: "八点二十分，你在去港口的路上被拦了下来。拦你的人，一半说英语，一半说俄语。" },
+  { fx: { heart: true }, me: "这些年你太大意了，两边都攒够了你的把柄。今晚，他们终于对上了账。" },
+  { label: "de3fight" },
+  { act: "dock", win: "de3esc", lose: "de3lost" },
+  { label: "de3esc" },
+  { fx: { cam: "right" }, n: "你挣脱出来，跳上一辆路过的出租车，把一沓美元拍在司机手里：「机场。」" },
+  { go: "de3fly" },
+  { label: "de3lost" },
+  { n: "第三个人从背后勒住了你的脖子。你最后看见的，是港口的灯一盏一盏地暗下去。" },
+  { go: "de4end" },
+  { label: "de4" },
+  { fx: { telegram: { from: "FBI → LONDON", text: "PHILBY UNDER INVESTIGATION STOP" } }, n: "联邦调查局的报告送到了伦敦。几乎同一天，莫斯科切断了和你的所有联系。" },
+  { fx: { cam: "out" }, me: "我把两边都当成了买家，却忘了自己也是货。" },
+  { label: "de4end" },
+  { card: null, stamp: "改写", alt: true, h: "如果两边都发现了", t: "历史上，菲尔比两次被怀疑，两次都脱了身，因为他只替一边工作，另一边找不到确凿的证据。同时替两边工作，就意味着两边手里都有你的把柄。" },
+  { end: "D4", line: "D", title: "两头落空", desc: "伦敦不要你了，莫斯科也不要你了。你在一间没有窗户的房间里，写了一份很长的交代，却不知道该交给谁。", kind: "双面线结局" },
+
+  { label: "e1" },
+  { fx: { cam: "out" }, s: "奥托", t: "……我明白了。就当今天我们没见过。", v: "O7" },
+  { label: "e1end" },
+  { hide: true },
+  { card: null, stamp: "改写", alt: true, h: "如果他拒绝了", t: "历史上菲尔比答应了。如果他拒绝，剑桥五人组会少掉最关键的一个人，英国情报史上最大的丑闻也许不会发生。" },
+  { end: "A1", title: "平凡的一生", desc: "你成了一名普通的记者，写过战争，也写过和平。很多年后翻报纸，你偶尔会想起摄政公园里的那张长椅。", kind: "改写结局" },
+
+  { label: "e1b" },
+  { fx: { cam: "out" }, s: "奥托", t: "那我们就没什么可谈的了。祝你好运，菲尔比先生。", v: "O8" },
+  { go: "e1end" },
+
+  { label: "e2" },
+  { fx: { doc: { title: "名单（节选）", lines: ["外交部 · ……", "反间谍部门 · H. A. R. PHILBY"], hl: 1 } }, n: "沃尔科夫顺利投奔了英国。他带来的名单，三周后摆在了军情六处局长的桌上。" },
+  { fx: { knock: true }, n: "那天下午，你办公室的门被敲响了。" },
+  { card: null, stamp: "改写", alt: true, h: "如果他没有接手", t: "历史上，正是菲尔比亲自接手、刻意拖延，才让沃尔科夫没能开口。这是他一生中离暴露最近的一次。" },
+  { end: "A2", title: "伊斯坦布尔的名单", desc: "1945 年，你作为苏联间谍被捕。之后的三个剑桥同伴，也一个接一个被查了出来。", kind: "改写结局" },
+
+  { label: "e3" },
+  { hide: true },
+  { fx: { news: { text: "外交官麦克林被捕", sub: "审讯仍在进行" } }, n: "麦克林在伦敦被捕。审讯进行到第三天，他说出了剑桥的那几个名字。" },
+  { label: "e3end" },
+  { card: null, stamp: "改写", alt: true, h: "如果他袖手旁观", t: "历史上，菲尔比选择了冒险示警，麦克林和伯吉斯得以出逃。这也让他自己第一次被正式怀疑。" },
+  { end: "A3", title: "荷马开口了", desc: "你保住了自己一天，却没能保住第二天。审讯室的灯，比华盛顿的台灯亮得多。", kind: "改写结局" },
+
+  { label: "e6" },
+  { fx: { cam: "out" }, s: "尼古拉斯·埃利奥特", t: "……好。我会如实向伦敦汇报。", v: "E5" },
+  { hide: true },
+  { fx: { cam: "out" }, n: "埃利奥特走了。你以为又躲过了一次。" },
+  { fx: { note: "Корабль уходит\nзавтра ночью.", sub: "（货船明晚开）" }, n: "第二天夜里，一个陌生人在酒吧里坐到你旁边，用俄语低声说了一句：「货船明晚开。」" },
+  { choice: "1963r", sub: true, q: "补救 · 1963", h: "这是最后一次离开的机会。", opts: [
+    { t: "上船。", go: "c6back", fx: { horn: true, map: ["BEIRUT", "ODESSA"] } },
+    { t: "留下。他们没有证据，我还能撑过去。", go: "e6b", fx: { rain: true } } ] },
+  { label: "c6back" },
+  { loop: "1963" },
+  { go: "c6h" },
+  { label: "e6b" },
+  { fx: { knock: true }, n: "三周后，敲门的不是朋友，是黎巴嫩警察，手里拿着一张引渡请求。" },
+  { card: null, stamp: "改写", alt: true, h: "如果他硬撑到底", t: "历史上，菲尔比承认了一部分，用这几天时间安排了出逃。如果他全盘否认，伦敦也许会改用更强硬的办法。" },
+  { end: "A5", title: "贝鲁特的雨夜", desc: "你否认了一切，也失去了最后一次离开的机会。押送你回伦敦的飞机，在一个雨夜起飞。", kind: "改写结局" },
+
+  { label: "e3b" },
+  { fx: { map: ["DOVER", "CALAIS"] }, n: "麦克林一个人上了去法国的渡轮。到了加莱，他慌了，给伦敦的妻子打了一通电话。" },
+  { fx: { telegram: { from: "WIRETAP · CALAIS", text: "CALL TO LONDON 23 40 SUBJECT MACLEAN", decrypt: true } }, n: "电话被监听了。他在加莱被扣下，押回伦敦。审讯进行到第三天，他说出了剑桥的那几个名字。" },
+  { go: "e3end" },
+
+  { label: "e5" },
+  { hide: true },
+  { fx: { doc: { title: "供词", lines: ["本人承认以上全部内容属实。"], sign: true } }, n: "你在供词上签了名。几个月后，你回到伦敦，住进一间有人二十四小时看守的公寓。" },
+  { card: null, stamp: "改写", alt: true, h: "如果他全部招供", t: "历史上，菲尔比只交代了一部分，几天后就消失了。军情六处到底是想让他认罪，还是故意放他走，至今仍有争议。" },
+  { end: "A4", title: "回到伦敦", desc: "你没有坐牢，也没有自由。你的故事被写进一份永远不会公开的档案。", kind: "改写结局" }
+];
+const CHAPTERS = ["1934", "1945", "1951", "1955", "1963"];
+const LINES = { H: { name: "史实线", short: "史实", codes: ["H", "A1", "A2", "A3", "A4", "A5", "A6"] }, S: { name: "苏联线", short: "苏联", codes: ["S1", "S2", "S3", "S4"] }, D: { name: "双面线", short: "双面", codes: ["D1", "D2", "D3", "D4"] } };
+const ALL_ENDS = Object.values(LINES).flatMap(l => l.codes);
+const NPC = {
+  otto: { name: "奥托", hat: "fedora", coat: "#2B2F36", rim: "#C9B27A", tie: "#3A2A24" },
+  burgess: { name: "盖伊·伯吉斯", hat: "none", hair: "messy", coat: "#3A3328", rim: "#E0B060", tie: "#7A2A24" },
+  reporter: { name: "记者", hat: "press", coat: "#2E3238", rim: "#EDEDED", tie: "#2A2A2A" },
+  elliott: { name: "尼古拉斯·埃利奥特", hat: "none", hair: "neat", glasses: true, coat: "#252A31", rim: "#9FB4C4", tie: "#24364A" },
+  colonel: { name: "沃罗宁上校", hat: "cap", coat: "#2C3226", rim: "#D9A441", tie: "#3B2F22" }
+};
+
+/* ================= 工具 ================= */
+const $ = s => document.querySelector(s);
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const reduced = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
+const rng = seed => () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
+const store = { get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }, set(k, v) { try { localStorage.setItem(k, v); } catch (e) { } } };
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+function vignette(g, w, h, k) { const v = g.createRadialGradient(w / 2, h * .45, Math.min(w, h) * .3, w / 2, h * .5, Math.max(w, h) * .75); v.addColorStop(0, "rgba(0,0,0,0)"); v.addColorStop(1, `rgba(0,0,0,${k})`); g.fillStyle = v; g.fillRect(0, 0, w, h); }
+function rain(g, drops, t, d, h, col) { g.strokeStyle = col; g.lineWidth = d; g.beginPath(); for (const p of drops) { const y = ((p.y + t * 900 * d * p.s) % (h + 60 * d)) - 30 * d, x = p.x - y * .15; g.moveTo(x, y); g.lineTo(x - p.l * .15, y + p.l); } g.stroke(); }
+
+/* ================= 背景（代码绘制，填 ART.bg 换成照片） ================= */
+const BG = {};
+BG.park = {
+  init(w, h, d) { const r = rng(3); this.w = w; this.h = h; this.d = d;
+    this.trees = Array.from({ length: 9 }, (_, i) => ({ x: (i / 8) * w + (r() - .5) * w * .08, s: .6 + r() * .6, far: r() < .5 }));
+    this.fog = Array.from({ length: 6 }, () => ({ y: h * (.45 + r() * .4), rx: w * (.3 + r() * .4), s: .3 + r() * .7, x: r() * w })); },
+  draw(g, t) { const { w, h, d } = this;
+    let gr = g.createLinearGradient(0, 0, 0, h); gr.addColorStop(0, "#8D958F"); gr.addColorStop(.6, "#5F6A66"); gr.addColorStop(1, "#2E3533"); g.fillStyle = gr; g.fillRect(0, 0, w, h);
+    for (const tr of this.trees) { const base = h * .74, th = h * .5 * tr.s; g.fillStyle = tr.far ? "rgba(60,70,66,.55)" : "rgba(30,36,34,.85)";
+      g.fillRect(tr.x - 4 * d * tr.s, base - th * .45, 8 * d * tr.s, th * .45);
+      g.beginPath(); g.ellipse(tr.x, base - th * .6, w * .07 * tr.s, th * .32, 0, 0, Math.PI * 2); g.fill(); g.beginPath(); g.ellipse(tr.x + w * .03 * tr.s, base - th * .75, w * .05 * tr.s, th * .22, 0, 0, Math.PI * 2); g.fill(); }
+    g.fillStyle = "#262C2A"; g.fillRect(0, h * .74, w, h * .26);
+    g.fillStyle = "#3A3128"; const bx = w * .58, by = h * .7; g.fillRect(bx, by, w * .22, 7 * d); g.fillRect(bx, by - 26 * d, w * .22, 6 * d); g.fillRect(bx + 6 * d, by, 5 * d, 30 * d); g.fillRect(bx + w * .22 - 11 * d, by, 5 * d, 30 * d);
+    g.fillStyle = "#1E2322"; g.fillRect(w * .2, h * .28, 5 * d, h * .46); const lg = g.createRadialGradient(w * .2, h * .28, 2, w * .2, h * .28, h * .2); lg.addColorStop(0, "rgba(255,226,170,.45)"); lg.addColorStop(1, "rgba(255,226,170,0)"); g.fillStyle = lg; g.fillRect(0, 0, w * .5, h * .6);
+    for (const f of this.fog) { const x = ((f.x + t * 14 * d * f.s) % (w + f.rx * 2)) - f.rx; const fg = g.createRadialGradient(x, f.y, 0, x, f.y, f.rx); fg.addColorStop(0, "rgba(200,206,200,.22)"); fg.addColorStop(1, "rgba(200,206,200,0)"); g.fillStyle = fg; g.fillRect(x - f.rx, f.y - f.rx, f.rx * 2, f.rx * 2); }
+    vignette(g, w, h, .55); }
+};
+BG.istanbul = {
+  init(w, h, d) { const r = rng(9); this.w = w; this.h = h; this.d = d; this.hy = h * .58;
+    this.sky = []; let x = 0; while (x < w) { const bw = (30 + r() * 70) * d; this.sky.push({ x, w: bw, h: (14 + r() * 40) * d, dome: r() < .25, min: r() < .18, l: r() < .5 }); x += bw; }
+    this.stars = Array.from({ length: 50 }, () => ({ x: r() * w, y: r() * h * .4, p: r() * 6 })); },
+  draw(g, t) { const { w, h, d, hy } = this;
+    let gr = g.createLinearGradient(0, 0, 0, hy); gr.addColorStop(0, "#08121C"); gr.addColorStop(1, "#1D3346"); g.fillStyle = gr; g.fillRect(0, 0, w, hy);
+    for (const s of this.stars) { g.fillStyle = `rgba(230,235,240,${(.3 + .4 * Math.sin(t + s.p)).toFixed(3)})`; g.fillRect(s.x, s.y, 1.5 * d, 1.5 * d); }
+    g.fillStyle = "#E8E2C8"; g.beginPath(); g.arc(w * .78, h * .16, 22 * d, 0, Math.PI * 2); g.fill(); g.fillStyle = "#132535"; g.beginPath(); g.arc(w * .78 + 9 * d, h * .16 - 4 * d, 20 * d, 0, Math.PI * 2); g.fill();
+    for (const b of this.sky) { g.fillStyle = "#0B1520"; g.fillRect(b.x, hy - b.h, b.w, b.h);
+      if (b.dome) { g.beginPath(); g.arc(b.x + b.w / 2, hy - b.h, b.w * .42, Math.PI, 0); g.fill(); }
+      if (b.min) { g.fillRect(b.x + b.w * .8, hy - b.h - 70 * d, 5 * d, 70 * d); g.beginPath(); g.moveTo(b.x + b.w * .8 - 2 * d, hy - b.h - 70 * d); g.lineTo(b.x + b.w * .8 + 2.5 * d, hy - b.h - 88 * d); g.lineTo(b.x + b.w * .8 + 7 * d, hy - b.h - 70 * d); g.fill(); }
+      if (b.l) { g.fillStyle = "rgba(240,190,110,.7)"; g.fillRect(b.x + b.w * .3, hy - b.h * .6, 3 * d, 3 * d); } }
+    gr = g.createLinearGradient(0, hy, 0, h); gr.addColorStop(0, "#132838"); gr.addColorStop(1, "#060B10"); g.fillStyle = gr; g.fillRect(0, hy, w, h - hy);
+    g.lineWidth = 1.5 * d; for (let i = 0; i < 18; i++) { const y = hy + (h - hy) * (i + .5) / 18, a = .1 + .25 * (.5 + .5 * Math.sin(t * 1.4 + i * 1.3)); g.strokeStyle = `rgba(232,226,200,${a.toFixed(3)})`; const cx = w * .78 + Math.sin(t * .6 + i) * 14 * d, half = (20 + i * 9) * d; g.beginPath(); g.moveTo(cx - half, y); g.lineTo(cx + half, y); g.stroke(); }
+    vignette(g, w, h, .6); }
+};
+BG.office = {
+  init(w, h, d) { this.w = w; this.h = h; this.d = d; },
+  draw(g, t) { const { w, h, d } = this;
+    g.fillStyle = "#1B1712"; g.fillRect(0, 0, w, h);
+    const wx = w * .52, wy = h * .08, ww = w * .4, wh = h * .55;
+    g.fillStyle = "#3A2C1A"; g.fillRect(wx, wy, ww, wh);
+    for (let i = 0; i < 22; i++) { const y = wy + i * wh / 22; g.fillStyle = `rgba(240,190,110,${(.5 + .08 * Math.sin(t * .5 + i)).toFixed(3)})`; g.fillRect(wx, y, ww, wh / 22 * .55); }
+    g.save(); g.globalAlpha = .18; g.fillStyle = "#F0C070"; g.beginPath(); g.moveTo(wx, wy); g.lineTo(wx + ww, wy); g.lineTo(w * .1, h); g.lineTo(-w * .2, h); g.closePath(); g.fill(); g.restore();
+    g.fillStyle = "#2A2118"; g.fillRect(0, h * .72, w, h * .28); g.fillStyle = "#3D2E1F"; g.fillRect(0, h * .7, w, h * .03);
+    g.fillStyle = "#E7DCC2"; g.save(); g.translate(w * .3, h * .76); g.rotate(-.08); g.fillRect(0, 0, w * .14, h * .1); g.fillStyle = "#B3261E"; g.fillRect(w * .02, h * .015, w * .05, h * .012); g.restore();
+    g.fillStyle = "#1A1612"; g.fillRect(w * .12, h * .5, 6 * d, h * .2); g.beginPath(); g.moveTo(w * .09, h * .5); g.lineTo(w * .17, h * .5); g.lineTo(w * .145, h * .43); g.lineTo(w * .115, h * .43); g.fill();
+    const lg = g.createRadialGradient(w * .13, h * .55, 2, w * .13, h * .6, h * .35); lg.addColorStop(0, "rgba(255,210,140,.5)"); lg.addColorStop(1, "rgba(255,210,140,0)"); g.fillStyle = lg; g.fillRect(0, h * .3, w * .45, h * .7);
+    g.strokeStyle = "rgba(220,215,205,.18)"; g.lineWidth = 3 * d; g.beginPath(); for (let i = 0; i < 3; i++) { const x0 = w * .4 + i * 8 * d, y0 = h * .72; g.moveTo(x0, y0); for (let k = 1; k < 12; k++) g.lineTo(x0 + Math.sin(t * .8 + k * .7 + i) * 12 * d, y0 - k * 14 * d); } g.stroke();
+    vignette(g, w, h, .6); }
+};
+BG.press = {
+  init(w, h, d) { const r = rng(15); this.w = w; this.h = h; this.d = d; this.fl = Array.from({ length: 7 }, () => ({ x: r(), y: .55 + r() * .3, p: r() * 10, s: 1 + r() * 1.5 })); this.drops = Array.from({ length: 140 }, () => ({ x: r() * w * 1.2, y: r() * h, l: (10 + r() * 16) * d, s: .7 + r() * .5 })); },
+  draw(g, t) { const { w, h, d } = this;
+    g.fillStyle = "#14161B"; g.fillRect(0, 0, w, h);
+    g.fillStyle = "#1E2128"; g.fillRect(w * .1, 0, w * .8, h * .78);
+    for (let r = 0; r < 3; r++) for (let c = 0; c < 4; c++) { const x = w * .16 + c * w * .19, y = h * .08 + r * h * .2; g.fillStyle = (r * 4 + c) % 3 === 0 ? "rgba(230,190,120,.55)" : "#0E1014"; g.fillRect(x, y, w * .08, h * .12); }
+    g.fillStyle = "#0B0C10"; g.fillRect(w * .43, h * .48, w * .14, h * .3); g.fillStyle = "#C9A45C"; g.fillRect(w * .54, h * .62, 4 * d, 4 * d);
+    g.fillStyle = "#1A1C22"; g.fillRect(w * .4, h * .44, w * .2, h * .04);
+    g.fillStyle = "#0E1014"; g.fillRect(0, h * .78, w, h * .22);
+    rain(g, this.drops, t, d, h, "rgba(190,200,215,.28)");
+    for (const f of this.fl) { const ph = ((t * f.s + f.p) % 3); if (ph < .12) { const a = 1 - ph / .12; const fg = g.createRadialGradient(f.x * w, f.y * h, 0, f.x * w, f.y * h, h * .35); fg.addColorStop(0, `rgba(255,255,250,${(a * .9).toFixed(3)})`); fg.addColorStop(1, "rgba(255,255,250,0)"); g.fillStyle = fg; g.fillRect(0, 0, w, h); } }
+    vignette(g, w, h, .55); }
+};
+BG.beirut = {
+  init(w, h, d) { const r = rng(27); this.w = w; this.h = h; this.d = d; this.hy = h * .52; this.lights = Array.from({ length: 60 }, () => ({ x: r() * w, y: this.hy - r() * h * .12, p: r() * 6 })); this.drops = Array.from({ length: 180 }, () => ({ x: r() * w * 1.2, y: r() * h, l: (12 + r() * 18) * d, s: .8 + r() * .5 })); },
+  draw(g, t) { const { w, h, d, hy } = this;
+    let gr = g.createLinearGradient(0, 0, 0, hy); gr.addColorStop(0, "#05070B"); gr.addColorStop(1, "#18202A"); g.fillStyle = gr; g.fillRect(0, 0, w, hy);
+    g.fillStyle = "#0A0E14"; g.beginPath(); g.moveTo(0, hy); g.lineTo(0, hy - h * .1); g.quadraticCurveTo(w * .3, hy - h * .2, w * .55, hy - h * .08); g.lineTo(w, hy - h * .05); g.lineTo(w, hy); g.fill();
+    for (const l of this.lights) { g.fillStyle = `rgba(240,200,130,${(.35 + .3 * Math.sin(t * 2 + l.p)).toFixed(3)})`; g.fillRect(l.x, l.y, 2 * d, 2 * d); }
+    gr = g.createLinearGradient(0, hy, 0, h); gr.addColorStop(0, "#0F1822"); gr.addColorStop(1, "#030508"); g.fillStyle = gr; g.fillRect(0, hy, w, h - hy);
+    const sx = w * .58 + Math.sin(t * .2) * 6 * d, sy = hy + h * .06;
+    g.fillStyle = "#06080C"; g.beginPath(); g.moveTo(sx - w * .16, sy); g.lineTo(sx + w * .18, sy); g.lineTo(sx + w * .15, sy + h * .05); g.lineTo(sx - w * .14, sy + h * .05); g.fill();
+    g.fillRect(sx - w * .02, sy - h * .07, w * .07, h * .07); g.fillRect(sx + w * .01, sy - h * .12, 6 * d, h * .05); g.fillRect(sx - w * .1, sy - h * .1, 3 * d, h * .1);
+    g.fillStyle = "rgba(255,90,70,.85)"; g.fillRect(sx + w * .17, sy - 2 * d, 3 * d, 3 * d); g.fillStyle = "rgba(240,210,150,.8)"; for (let i = 0; i < 4; i++) g.fillRect(sx - w * .01 + i * 9 * d, sy - h * .05, 3 * d, 3 * d);
+    g.strokeStyle = "rgba(240,200,130,.18)"; g.lineWidth = 1.5 * d; for (let i = 0; i < 10; i++) { const y = hy + 12 * d + i * 8 * d; g.beginPath(); g.moveTo(sx - 30 * d + Math.sin(t + i) * 8 * d, y + h * .06); g.lineTo(sx + 30 * d + Math.sin(t + i) * 8 * d, y + h * .06); g.stroke(); }
+    rain(g, this.drops, t, d, h, "rgba(170,185,205,.3)");
+    vignette(g, w, h, .6); }
+};
+
+BG.moscow = {
+  init(w, h, d) { const r = rng(41); this.w = w; this.h = h; this.d = d; this.hy = h * .64;
+    this.snow = Array.from({ length: 170 }, () => ({ x: r() * w, y: r() * h, s: .4 + r() * .9, z: (1 + r() * 2.2) * d, p: r() * 6 }));
+    this.win = Array.from({ length: 26 }, () => ({ x: r(), y: r(), on: r() < .45 })); },
+  draw(g, t) { const { w, h, d, hy } = this;
+    let gr = g.createLinearGradient(0, 0, 0, hy); gr.addColorStop(0, "#090C14"); gr.addColorStop(1, "#2B303C"); g.fillStyle = gr; g.fillRect(0, 0, w, hy);
+    g.fillStyle = "#14171F"; g.fillRect(0, hy - h * .1, w, h * .1);
+    for (let x = 0; x < w; x += 22 * d) { g.beginPath(); g.moveTo(x, hy - h * .1); g.lineTo(x + 5 * d, hy - h * .1 - 12 * d); g.lineTo(x + 10 * d, hy - h * .1 - 12 * d); g.lineTo(x + 15 * d, hy - h * .1); g.fill(); }
+    const tx = w * .3, tw = w * .07; g.fillStyle = "#10131A"; g.fillRect(tx, hy - h * .3, tw, h * .3); g.fillRect(tx + tw * .15, hy - h * .38, tw * .7, h * .08);
+    g.beginPath(); g.moveTo(tx + tw * .15, hy - h * .38); g.lineTo(tx + tw / 2, hy - h * .47); g.lineTo(tx + tw * .85, hy - h * .38); g.fill();
+    g.fillStyle = "rgba(233,225,207,.7)"; g.beginPath(); g.arc(tx + tw / 2, hy - h * .23, tw * .22, 0, Math.PI * 2); g.fill();
+    const sy = hy - h * .49, pulse = .55 + .25 * Math.sin(t * 1.3); const sg = g.createRadialGradient(tx + tw / 2, sy, 1, tx + tw / 2, sy, 40 * d); sg.addColorStop(0, `rgba(230,60,50,${pulse.toFixed(3)})`); sg.addColorStop(1, "rgba(230,60,50,0)"); g.fillStyle = sg; g.fillRect(tx - 40 * d, sy - 40 * d, tw + 80 * d, 80 * d);
+    g.fillStyle = "#E0453A"; g.beginPath(); for (let k = 0; k < 10; k++) { const a = -Math.PI / 2 + k * Math.PI / 5, rr = (k % 2 ? 3.5 : 8) * d; g.lineTo(tx + tw / 2 + Math.cos(a) * rr, sy + Math.sin(a) * rr); } g.fill();
+    [[.68, .09, .3], [.76, .06, .24], [.84, .07, .27], [.61, .05, .2]].forEach(([fx, fw, fh]) => { const x = w * fx, bw = w * fw, top = hy - h * fh; g.fillStyle = "#0E1118"; g.fillRect(x - bw * .35, top, bw * .7, hy - top);
+      g.beginPath(); g.moveTo(x - bw * .42, top); g.bezierCurveTo(x - bw * .5, top - bw * .5, x - bw * .1, top - bw * .55, x, top - bw * .95); g.bezierCurveTo(x + bw * .1, top - bw * .55, x + bw * .5, top - bw * .5, x + bw * .42, top); g.fill(); g.fillRect(x - d, top - bw * 1.25, 2 * d, bw * .32); });
+    for (const p of this.win) if (p.on) { g.fillStyle = "rgba(240,196,120,.55)"; g.fillRect(w * (.02 + p.x * .22), hy - h * (.05 + p.y * .2), 4 * d, 6 * d); }
+    gr = g.createLinearGradient(0, hy, 0, h); gr.addColorStop(0, "#5A606C"); gr.addColorStop(1, "#1C1F26"); g.fillStyle = gr; g.fillRect(0, hy, w, h - hy);
+    for (const f of this.snow) { const y = (f.y + t * 34 * d * f.s) % h, x = (f.x + Math.sin(t * .7 + f.p) * 14 * d + w) % w; g.fillStyle = `rgba(235,238,245,${(.35 + f.s * .4).toFixed(3)})`; g.beginPath(); g.arc(x, y, f.z, 0, Math.PI * 2); g.fill(); }
+    vignette(g, w, h, .6); }
+};
+BG.berlin = {
+  init(w, h, d) { const r = rng(53); this.w = w; this.h = h; this.d = d; this.drops = Array.from({ length: 130 }, () => ({ x: r() * w * 1.2, y: r() * h, l: (10 + r() * 16) * d, s: .7 + r() * .5 }));
+    this.bl = Array.from({ length: 2 }, (_, k) => Array.from({ length: 18 }, () => r() < .3)); },
+  draw(g, t) { const { w, h, d } = this, hy = h * .56;
+    let gr = g.createLinearGradient(0, 0, 0, hy); gr.addColorStop(0, "#07090D"); gr.addColorStop(1, "#1A1F28"); g.fillStyle = gr; g.fillRect(0, 0, w, hy);
+    const ang = -.42 + .22 * Math.sin(t * .35); g.save(); g.translate(w * .08, hy - h * .2); g.rotate(ang); const bg2 = g.createLinearGradient(0, 0, w * 1.1, 0); bg2.addColorStop(0, "rgba(230,232,220,.22)"); bg2.addColorStop(1, "rgba(230,232,220,0)"); g.fillStyle = bg2; g.beginPath(); g.moveTo(0, 0); g.lineTo(w * 1.1, -w * .09); g.lineTo(w * 1.1, w * .09); g.fill(); g.restore();
+    g.fillStyle = "#101319"; g.fillRect(w * .06, hy - h * .26, w * .04, h * .26); g.fillRect(w * .04, hy - h * .3, w * .08, h * .05);
+    [[0, .3], [.7, .3]].forEach(([fx, fw], k) => { g.fillStyle = "#0C0F14"; g.fillRect(w * fx, h * .08, w * fw, hy - h * .08); this.bl[k].forEach((on, j) => { if (on) { g.fillStyle = "rgba(235,200,130,.5)"; g.fillRect(w * (fx + .03 + (j % 6) * .045), h * (.14 + Math.floor(j / 6) * .11), w * .02, h * .045); } }); });
+    gr = g.createLinearGradient(0, hy, 0, h); gr.addColorStop(0, "#161A21"); gr.addColorStop(1, "#05070A"); g.fillStyle = gr; g.fillRect(0, hy, w, h - hy);
+    g.strokeStyle = "rgba(233,225,207,.5)"; g.lineWidth = 3 * d; g.setLineDash([18 * d, 16 * d]); g.beginPath(); g.moveTo(w * .5, hy); g.lineTo(w * .5, h); g.stroke(); g.setLineDash([]);
+    g.fillStyle = "#1B1F27"; g.fillRect(w * .54, hy - h * .17, w * .1, h * .17); g.fillStyle = "rgba(240,200,130,.6)"; g.fillRect(w * .565, hy - h * .13, w * .05, h * .05); g.fillStyle = "#E9E1CF"; g.fillRect(w * .55, hy - h * .21, w * .08, h * .035);
+    for (let k = 0; k < 8; k++) { g.fillStyle = k % 2 ? "#E9E1CF" : "#B3261E"; g.fillRect(w * (.3 + k * .028), hy - h * .055, w * .028, h * .018); } g.fillStyle = "#0E1015"; g.fillRect(w * .29, hy - h * .07, 6 * d, h * .07);
+    g.strokeStyle = "rgba(240,200,130,.12)"; g.lineWidth = 2 * d; for (let i = 0; i < 8; i++) { const y = hy + h * .08 + i * 9 * d, x = w * .59 + Math.sin(t * 1.2 + i) * 6 * d; g.beginPath(); g.moveTo(x - 20 * d, y); g.lineTo(x + 20 * d, y); g.stroke(); }
+    rain(g, this.drops, t, d, h, "rgba(175,190,210,.26)");
+    vignette(g, w, h, .62); }
+};
+BG.bridge = {
+  init(w, h, d) { const r = rng(61); this.w = w; this.h = h; this.d = d; this.fog = Array.from({ length: 8 }, () => ({ y: h * (.3 + r() * .5), rx: w * (.3 + r() * .4), s: .3 + r() * .6, x: r() * w })); },
+  draw(g, t) { const { w, h, d } = this, deck = h * .62;
+    let gr = g.createLinearGradient(0, 0, 0, deck); gr.addColorStop(0, "#252B33"); gr.addColorStop(1, "#5B636C"); g.fillStyle = gr; g.fillRect(0, 0, w, deck);
+    gr = g.createLinearGradient(0, deck, 0, h); gr.addColorStop(0, "#2E343B"); gr.addColorStop(1, "#0B0D10"); g.fillStyle = gr; g.fillRect(0, deck, w, h - deck);
+    g.strokeStyle = "rgba(20,24,30,.85)"; g.lineWidth = 5 * d;
+    [[-.1, .52], [.48, 1.1]].forEach(([a, b]) => { const x0 = w * a, x1 = w * b, mid = (x0 + x1) / 2, top = deck - h * .38; g.beginPath(); g.moveTo(x0, deck); g.quadraticCurveTo(mid, top - h * .12, x1, deck); g.stroke();
+      g.lineWidth = 2 * d; for (let k = 1; k < 12; k++) { const x = x0 + (x1 - x0) * k / 12, tt = k / 12, y = (1 - tt) * (1 - tt) * deck + 2 * (1 - tt) * tt * (top - h * .12) + tt * tt * deck; g.beginPath(); g.moveTo(x, deck); g.lineTo(x, y); g.stroke(); if (k < 11) { const x2 = x0 + (x1 - x0) * (k + 1) / 12; g.beginPath(); g.moveTo(x, y); g.lineTo(x2, deck); g.stroke(); } } g.lineWidth = 5 * d; });
+    g.fillStyle = "#14181E"; g.fillRect(0, deck, w, h * .04);
+    g.fillStyle = "rgba(233,225,207,.75)"; g.fillRect(w * .495, deck + h * .04, 4 * d, h - deck);
+    [.18, .38, .62, .82].forEach(fx => { g.fillStyle = "#101318"; g.fillRect(w * fx, deck - h * .2, 3 * d, h * .2); const lg = g.createRadialGradient(w * fx, deck - h * .2, 1, w * fx, deck - h * .2, 50 * d); lg.addColorStop(0, "rgba(255,226,170,.55)"); lg.addColorStop(1, "rgba(255,226,170,0)"); g.fillStyle = lg; g.fillRect(w * fx - 50 * d, deck - h * .2 - 50 * d, 100 * d, 100 * d); });
+    for (const f of this.fog) { const x = ((f.x + t * 10 * d * f.s) % (w + f.rx * 2)) - f.rx; const fg = g.createRadialGradient(x, f.y, 0, x, f.y, f.rx); fg.addColorStop(0, "rgba(205,210,215,.28)"); fg.addColorStop(1, "rgba(205,210,215,0)"); g.fillStyle = fg; g.fillRect(x - f.rx, f.y - f.rx, f.rx * 2, f.rx * 2); }
+    vignette(g, w, h, .55); }
+};
+
+function imageBg(src) { const im = new Image(); im.src = src; im.onload = () => { dirty = true; };
+  return { init(w, h) { this.w = w; this.h = h; }, draw(g, t) { const { w, h } = this; g.fillStyle = "#0D0F13"; g.fillRect(0, 0, w, h); if (!im.naturalWidth) return; const sc = Math.max(w / im.naturalWidth, h / im.naturalHeight) * (1.04 + .02 * Math.sin(t * .05)); const dw = im.naturalWidth * sc, dh = im.naturalHeight * sc; g.drawImage(im, (w - dw) / 2, (h - dh) / 2, dw, dh); } }; }
+
+const cv = $("#bg"), gx = cv.getContext("2d"), snap = $("#snap"), sx = snap.getContext("2d"), gc = $("#grain"), gg = gc.getContext("2d");
+let cur = null, t0 = performance.now(), dirty = true, lastGrain = 0;
+function sizeCanvas(c) { const d = Math.min(2, devicePixelRatio || 1); c.width = Math.round(c.clientWidth * d); c.height = Math.round(c.clientHeight * d); return d; }
+function useBg(name) { cur = ART.bg[name] ? imageBg(ART.bg[name]) : BG[name]; const d = sizeCanvas(cv); cur.init(cv.width, cv.height, d); dirty = true; }
+function grain(now) {
+  if (now - lastGrain < 80) return; lastGrain = now;
+  if (gc.width !== Math.round(gc.clientWidth / 2)) { gc.width = Math.round(gc.clientWidth / 2); gc.height = Math.round(gc.clientHeight / 2); }
+  const im = gg.createImageData(gc.width, gc.height), a = im.data; for (let i = 0; i < a.length; i += 4) { const v = Math.random() * 255; a[i] = a[i + 1] = a[i + 2] = v; a[i + 3] = 26; } gg.putImageData(im, 0, 0);
+}
+function frame(now) { const t = reduced() ? 0 : (now - t0) / 1000; if (cur && (!reduced() || dirty)) { cur.draw(gx, t); dirty = false; } if (!reduced()) grain(now); requestAnimationFrame(frame); }
+requestAnimationFrame(frame);
+addEventListener("resize", () => { if (cur) { const d = sizeCanvas(cv); cur.init(cv.width, cv.height, d); dirty = true; } });
+
+/* ================= 人物剪影（逆光，正式版可换成插画或照片） ================= */
+function npcSVG(k) {
+  const n = NPC[k], hats = {
+    fedora: `<path d="M92,96 C92,60 208,60 208,96 Z" fill="#111317"/><path d="M62,100 Q150,80 238,100 Q150,116 62,100Z" fill="#111317"/><path d="M96,92 L204,92" stroke="#3A2E24" stroke-width="7"/>`,
+    press: `<path d="M94,98 C94,62 206,62 206,98 Z" fill="#15171B"/><path d="M66,102 Q150,84 234,102 Q150,116 66,102Z" fill="#15171B"/><rect x="170" y="78" width="24" height="16" fill="#E7DCC2" transform="rotate(8 182 86)"/>`,
+    cap: `<path d="M90,94 C86,62 214,62 210,94 Z" fill="#232A1E"/><path d="M84,96 Q150,74 216,96 L210,104 Q150,88 90,104Z" fill="#2E3626"/><path d="M98,104 Q150,124 202,104 L196,112 Q150,128 104,112Z" fill="#0A0B0D"/><path d="M150,72 l4,9 10,1 -8,6 3,10 -9,-6 -9,6 3,-10 -8,-6 10,-1Z" fill="#B3261E"/>`,
+    none: ""
+  }, hair = { messy: `<path d="M96,110 C90,62 130,50 152,54 C182,50 214,70 206,112 C198,96 186,90 176,100 C168,86 150,84 140,96 C126,86 108,92 96,110Z" fill="#141210"/>`, neat: `<path d="M98,108 C96,66 128,56 150,56 C176,56 206,66 204,108 C190,90 160,84 136,88 C118,90 104,98 98,108Z" fill="#121418"/>` };
+  return `<svg viewBox="0 0 300 420" role="img" aria-label="${n.name}的剪影"><g class="breathe">
+    <path d="M40,420 C44,330 92,292 150,288 C208,292 256,330 260,420Z" fill="${n.coat}"/>
+    <path d="M150,292 L118,300 L140,372 Z M150,292 L182,300 L160,372 Z" fill="#0F1115"/>
+    <path d="M142,300 L150,380 L158,300 Z" fill="${n.tie}"/>
+    <path d="M40,420 C44,330 92,292 150,288 C208,292 256,330 260,420" fill="none" stroke="${n.rim}" stroke-width="3" opacity=".55"/>
+    <rect x="132" y="240" width="36" height="54" rx="10" fill="#0E0F12"/>
+    <g transform="translate(0,26)">
+    <ellipse cx="150" cy="160" rx="58" ry="74" fill="#121317"/>
+    <path d="M206,140 C210,190 196,226 168,236" fill="none" stroke="${n.rim}" stroke-width="3" opacity=".7"/>
+    ${n.glasses ? `<g stroke="${n.rim}" stroke-width="2" fill="none" opacity=".75"><circle cx="128" cy="160" r="13"/><circle cx="172" cy="160" r="13"/><path d="M141,160 L159,160"/></g>` : ""}
+    ${hair[n.hair] || ""}${hats[n.hat] || ""}
+    </g>
+  </g></svg>`;
+}
+const npcEl = $("#npc");
+function showNpc(k) { npcEl.innerHTML = npcSVG(k); npcEl.classList.add("on"); $("#game").classList.add("focus"); }
+function hideNpc() { npcEl.classList.remove("on", "listen"); $("#game").classList.remove("focus"); }
+
+
+/* ================= 音乐与音效（Web Audio 实时合成，不用外部音频文件） ================= */
+const Music = (() => {
+  let ac = null, master = null, on = true, curTrack = null, curName = "", timer = null;
+  try { on = store.get("philby-music") !== "off"; } catch (e) { }
+  const mf = m => 440 * Math.pow(2, (m - 69) / 12);
+  let noiseBuf = null;
+  function ensure() {
+    if (ac) return true;
+    const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return false;
+    ac = new AC(); master = ac.createGain(); master.gain.value = on ? .55 : 0;
+    const comp = ac.createDynamicsCompressor(); master.connect(comp); comp.connect(ac.destination);
+    noiseBuf = ac.createBuffer(1, ac.sampleRate * 2, ac.sampleRate); const d = noiseBuf.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+    return true;
+  }
+  function env(g, t, a, peak, dec, sus = 0.0001) { peak = Math.max(peak, .0002); g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(peak, t + a); g.gain.exponentialRampToValueAtTime(Math.max(sus, .0001), t + a + dec); }
+  /* 乐器 */
+  function piano(out, m, t, dur = 1.6, vel = .18) {
+    const g = ac.createGain(), f = ac.createBiquadFilter(); f.type = "lowpass"; f.frequency.value = 2600; g.connect(f); f.connect(out);
+    [["triangle", 0], ["sine", 1200], ["sine", -5]].forEach(([ty, det], k) => { const o = ac.createOscillator(); o.type = ty; o.frequency.value = mf(m) * (k === 1 ? 2 : 1); o.detune.value = k === 1 ? 0 : det; const og = ac.createGain(); og.gain.value = k === 1 ? .18 : .5; o.connect(og); og.connect(g); o.start(t); o.stop(t + dur + .1); });
+    env(g, t, .006, vel, dur);
+  }
+  function rhodes(out, m, t, dur = .9, vel = .07) {
+    const g = ac.createGain(); g.connect(out);
+    const o = ac.createOscillator(); o.type = "sine"; o.frequency.value = mf(m);
+    const mod = ac.createOscillator(), mg = ac.createGain(); mod.frequency.value = mf(m) * 2; mg.gain.setValueAtTime(mf(m) * 1.2, t); mg.gain.exponentialRampToValueAtTime(1, t + .4); mod.connect(mg); mg.connect(o.frequency);
+    o.connect(g); env(g, t, .01, vel, dur); o.start(t); mod.start(t); o.stop(t + dur + .1); mod.stop(t + dur + .1);
+  }
+  function bass(out, m, t, dur = .5, vel = .3) {
+    const g = ac.createGain(), f = ac.createBiquadFilter(); f.type = "lowpass"; f.frequency.value = 600; g.connect(f); f.connect(out);
+    const o = ac.createOscillator(); o.type = "triangle"; o.frequency.value = mf(m); const s = ac.createOscillator(); s.type = "sine"; s.frequency.value = mf(m);
+    o.connect(g); s.connect(g); env(g, t, .01, vel, dur); o.start(t); s.start(t); o.stop(t + dur + .1); s.stop(t + dur + .1);
+  }
+  function pad(out, notes, t, dur, vel = .035, cut = 900) {
+    const g = ac.createGain(), f = ac.createBiquadFilter(); f.type = "lowpass"; f.frequency.value = cut; g.connect(f); f.connect(out);
+    g.gain.setValueAtTime(.0001, t); g.gain.exponentialRampToValueAtTime(vel, t + dur * .35); g.gain.setValueAtTime(vel, t + dur * .7); g.gain.exponentialRampToValueAtTime(.0001, t + dur);
+    notes.forEach(n => [-7, 7].forEach(det => { const o = ac.createOscillator(); o.type = "sawtooth"; o.frequency.value = mf(n); o.detune.value = det; o.connect(g); o.start(t); o.stop(t + dur + .05); }));
+  }
+  function pluck(out, m, t, vel = .12) {
+    const g = ac.createGain(), f = ac.createBiquadFilter(); f.type = "bandpass"; f.frequency.value = mf(m) * 2; f.Q.value = 2; g.connect(f); f.connect(out);
+    const o = ac.createOscillator(); o.type = "sawtooth"; o.frequency.value = mf(m); o.connect(g); env(g, t, .004, vel, .7); o.start(t); o.stop(t + .8);
+  }
+  function noise(out, t, dur, type, freq, vel, q = 1) {
+    const s = ac.createBufferSource(); s.buffer = noiseBuf; const f = ac.createBiquadFilter(); f.type = type; f.frequency.value = freq; f.Q.value = q; const g = ac.createGain();
+    s.connect(f); f.connect(g); g.connect(out); env(g, t, .002, vel, dur); s.start(t, Math.random()); s.stop(t + dur + .05);
+  }
+  function drum(out, t, f0, f1, vel, dur = .35) { const o = ac.createOscillator(), g = ac.createGain(); o.frequency.setValueAtTime(f0, t); o.frequency.exponentialRampToValueAtTime(f1, t + dur); o.connect(g); g.connect(out); env(g, t, .003, vel, dur); o.start(t); o.stop(t + dur + .05); }
+  function loopNoise(out, type, freq, vel) { const s = ac.createBufferSource(); s.buffer = noiseBuf; s.loop = true; const f = ac.createBiquadFilter(); f.type = type; f.frequency.value = freq; const g = ac.createGain(); g.gain.value = vel; s.connect(f); f.connect(g); g.connect(out); s.start(); return () => { try { s.stop(); } catch (e) { } }; }
+  function drone(out, notes, vel, cut = 320) { const g = ac.createGain(), f = ac.createBiquadFilter(); f.type = "lowpass"; f.frequency.value = cut; g.gain.value = vel; g.connect(f); f.connect(out); const lfo = ac.createOscillator(), lg = ac.createGain(); lfo.frequency.value = .08; lg.gain.value = cut * .4; lfo.connect(lg); lg.connect(f.frequency); lfo.start(); const os = notes.flatMap(n => [-6, 6].map(det => { const o = ac.createOscillator(); o.type = "sawtooth"; o.frequency.value = mf(n); o.detune.value = det; o.connect(g); o.start(); return o; })); return () => { os.forEach(o => { try { o.stop(); } catch (e) { } }); try { lfo.stop(); } catch (e) { } }; }
+
+  /* 曲目：每章一首（16 分音符步进，循环） */
+  const C = { Dm: [62, 65, 69], Bb: [58, 62, 65], Gm: [55, 58, 62], A: [57, 61, 64], F: [57, 60, 65] };
+  const TRACKS = {
+    theme: { bpm: 64, len: 64, setup: o => drone(o, [38, 45], .025), step(o, i, t, b) { const bar = i >> 4, s = i & 15, ch = [C.Dm, C.Bb, C.Gm, C.A][bar];
+      if (s === 0) pad(o, ch.map(n => n - 12), t, b * 16, .03); const mel = [[0, 74], [6, 72], [8, 69], [12, 70], [16, 74], [22, 77], [24, 76], [28, 74], [32, 70], [38, 69], [40, 67], [44, 65], [48, 64], [54, 65], [56, 61], [60, 62]];
+      mel.forEach(([st, n]) => { if (st === i) piano(o, n, t, 2.4, .11); }); } },
+    park: { bpm: 76, len: 64, step(o, i, t, b) { const bar = i >> 4, s = i & 15, ch = [C.Dm, C.Bb, C.F, C.A][bar];
+      if (s === 0) { pad(o, ch.map(n => n - 12), t, b * 16, .022); bass(o, ch[0] - 24, t, b * 7, .22); } if (s === 8) bass(o, ch[0] - 24, t, b * 7, .16);
+      if (s % 2 === 0) { const pat = [0, 1, 2, 1, 0, 2, 1, 2], n = ch[pat[s / 2]] + (s === 6 ? 12 : 0); piano(o, n, t, 1.4, .07 + (s === 0 ? .04 : 0)); } } },
+    istanbul: { bpm: 70, len: 32, setup: o => drone(o, [40, 47], .03, 260), step(o, i, t, b) { const sc = [64, 65, 68, 69, 71, 72, 74, 76];
+      if ([0, 12, 16].includes(i)) drum(o, t, 140, 45, .35); if ([6, 8, 22, 26].includes(i)) noise(o, t, .08, "bandpass", 2200, .12, 3);
+      if (i % 2 === 0 && Math.random() < .42) pluck(o, sc[(Math.random() * sc.length) | 0], t, .09); if (i === 0 && Math.random() < .5) pluck(o, 76, t + b * 2, .07); } },
+    office: { bpm: 94, len: 64, step(o, i, t, b) { const bar = i >> 4, s = i & 15, sw = (s % 4 === 2) ? b * .33 : 0;
+      const roots = [38, 43, 36, 45], chords = [[60, 65, 69, 72], [59, 62, 65, 69], [59, 64, 67, 71], [61, 64, 67, 70]], walk = [[38, 41, 45, 44], [43, 47, 50, 37], [36, 40, 43, 44], [45, 49, 52, 37]];
+      if (s % 4 === 0) bass(o, walk[bar][s / 4], t, b * 3.6, .3);
+      if (s === 6 || s === 14 || (s === 10 && bar % 2)) chords[bar].forEach(n => rhodes(o, n - 12, t + sw, .5, .045));
+      if (s % 4 === 0 || s % 4 === 2) noise(o, t + sw, s % 8 === 4 ? .12 : .05, "highpass", 7000, s % 8 === 4 ? .05 : .025);
+      if (s === 4 || s === 12) noise(o, t, .18, "bandpass", 1800, .05, .7); } },
+    press: { bpm: 116, len: 32, setup: o => loopNoise(o, "lowpass", 900, .012), step(o, i, t, b) { const s = i & 15;
+      if (i % 2 === 0) bass(o, [38, 38, 50, 38, 38, 39, 38, 50][(i >> 1) & 7], t, b * 1.6, .18);
+      if (i % 4 === 0) noise(o, t, .03, "highpass", 5000, .08);
+      if (i === 0) pad(o, [50, 53, 57, 64], t, b * 32, .025, 1200); if (i === 16) pad(o, [51, 55, 58, 62], t, b * 16, .02, 1400); } },
+    beirut: { bpm: 58, len: 64, setup: o => { const a = loopNoise(o, "lowpass", 1400, .045), d = drone(o, [38], .03, 220); return () => { a(); d(); }; }, step(o, i, t, b) {
+      const mel = [[0, 74], [4, 72], [8, 69], [16, 70], [20, 69], [24, 65], [32, 67], [36, 65], [40, 64], [48, 62], [56, 61]];
+      mel.forEach(([st, n]) => { if (st === i) piano(o, n, t, 3, .09); }); const bar = i >> 4; if ((i & 15) === 0) pad(o, [C.Dm, C.Bb, C.Gm, C.A][bar].map(n => n - 12), t, b * 16, .02, 700); } },
+    moscow: { bpm: 60, len: 64, setup: o => drone(o, [33, 40], .028, 240), step(o, i, t, b) { const bar = i >> 4, s = i & 15, ch = [[57, 60, 64], [53, 57, 60], [50, 53, 57], [52, 56, 59]][bar];
+      if (s === 0) { pad(o, ch.map(n => n - 12), t, b * 16, .028, 900); bass(o, ch[0] - 24, t, b * 14, .18); }
+      [[0, 81], [4, 76], [8, 81], [24, 79], [32, 77], [36, 72], [40, 77], [56, 76]].forEach(([st, n]) => { if (st === i) { piano(o, n, t, 3.2, .07); piano(o, n - 12, t, 3.2, .04); } });
+      [[0, 69], [12, 72], [16, 71], [28, 67], [32, 69], [44, 64], [48, 65], [60, 64]].forEach(([st, n]) => { if (st === i) piano(o, n, t, 2.2, .08); }); } },
+    berlin: { bpm: 104, len: 32, setup: o => loopNoise(o, "lowpass", 600, .014), step(o, i, t, b) {
+      if (i % 2 === 0) bass(o, i % 8 === 6 ? 41 : 40, t, b * 1.5, .2);
+      if (i % 4 === 2) noise(o, t, .03, "highpass", 6000, .05);
+      if (i === 0) pad(o, [52, 55, 58, 62], t, b * 16, .022, 1100); if (i === 16) pad(o, [51, 55, 58, 61], t, b * 16, .022, 1100);
+      if (i === 12 || i === 28) piano(o, i === 12 ? 88 : 87, t, 1.6, .045); if (i === 24) drum(o, t, 90, 40, .25); } },
+    bridge: { bpm: 52, len: 64, setup: o => { const a = loopNoise(o, "lowpass", 500, .03), d = drone(o, [35, 42], .026, 200); return () => { a(); d(); }; }, step(o, i, t, b) {
+      if ((i & 15) === 0) pad(o, [[47, 50, 54], [43, 47, 50], [45, 48, 52], [42, 46, 49]][i >> 4], t, b * 16, .026, 800);
+      [[0, 71], [6, 69], [8, 66], [20, 67], [32, 66], [38, 64], [40, 62], [52, 61]].forEach(([st, n]) => { if (st === i) piano(o, n, t, 3.4, .08); });
+      if (i === 30 || i === 62) noise(o, t, 1.4, "bandpass", 300, .05, .6); } },
+    action: { bpm: 148, len: 32, setup: o => drone(o, [38], .02, 260), step(o, i, t, b) {
+      if ([0, 6, 8, 16, 22, 24].includes(i)) drum(o, t, 120, 40, .5, .22); if (i % 8 === 4) noise(o, t, .12, "bandpass", 1800, .2, .8); if (i % 2 === 0) noise(o, t, .03, "highpass", 7000, .05);
+      if (i % 2 === 0) bass(o, [38, 38, 41, 38, 43, 38, 41, 36][(i >> 1) & 7], t, b * 1.6, .24); if (i === 0 || i === 16) pad(o, i ? [50, 53, 57, 60] : [50, 53, 56, 60], t, b * 14, .02, 1600); } },
+    stealth: { bpm: 72, len: 32, setup: o => drone(o, [33, 40], .026, 170), step(o, i, t, b) {
+      if (i % 8 === 0) bass(o, i % 16 ? 33 : 36, t, b * 6, .16); if (i % 4 === 2) noise(o, t, .02, "bandpass", 3200, .025, 6); if (i === 12 || i === 28) piano(o, i === 12 ? 75 : 74, t, 2.4, .035); } },
+    endH: { bpm: 54, len: 64, setup: o => drone(o, [38, 45, 50], .02, 260), step(o, i, t, b) { const bar = i >> 4, ch = [C.Dm, C.Gm, C.Bb, C.A][bar]; if ((i & 15) === 0) { pad(o, ch, t, b * 16, .03, 1100); bass(o, ch[0] - 24, t, b * 14, .2); }
+      [[0, 74], [8, 77], [16, 74], [24, 70], [32, 72], [40, 74], [48, 73], [56, 74]].forEach(([st, n]) => { if (st === i) piano(o, n, t, 3.5, .1); }); } },
+    endA: { bpm: 60, len: 32, setup: o => drone(o, [41, 48], .02, 300), step(o, i, t, b) { if (i === 0) pad(o, [53, 57, 60, 64], t, b * 16, .03); if (i === 16) pad(o, [50, 53, 57, 60], t, b * 16, .03); if (i % 4 === 0) piano(o, [72, 69, 65, 69, 74, 72, 69, 67][i / 4], t, 1.8, .07); } }
+  };
+  function stopCur(fade = 1.2) {
+    if (!curTrack) return; const tr = curTrack; curTrack = null; clearInterval(timer);
+    const now = ac.currentTime; tr.gain.gain.cancelScheduledValues(now); tr.gain.gain.setValueAtTime(tr.gain.gain.value, now); tr.gain.gain.linearRampToValueAtTime(0, now + fade);
+    setTimeout(() => { try { tr.stop && tr.stop(); tr.gain.disconnect(); } catch (e) { } }, fade * 1000 + 200);
+  }
+  function play(name) {
+    if (!ac || name === curName) return; curName = name; stopCur();
+    const def = TRACKS[name]; if (!def) return;
+    const gain = ac.createGain(); gain.gain.value = 0; gain.connect(master); gain.gain.linearRampToValueAtTime(1, ac.currentTime + 1.5);
+    const tr = { gain, stop: def.setup ? def.setup(gain) : null }; curTrack = tr;
+    const beat = 60 / def.bpm / 4; let step = 0, next = ac.currentTime + .1;
+    timer = setInterval(() => { if (curTrack !== tr) return; while (next < ac.currentTime + .3) { def.step(gain, step, next, beat); step = (step + 1) % def.len; next += beat; } }, 50);
+  }
+  return {
+    unlock(track) { if (!ensure()) return; if (ac.state === "suspended") ac.resume(); if (track) play(track); },
+    play(name) { if (ac) play(name); else curName = ""; },
+    get on() { return on; },
+    get cur() { return curName; },
+    toggle() { on = !on; store.set("philby-music", on ? "on" : "off"); if (master) master.gain.setTargetAtTime(on ? .55 : 0, ac.currentTime, .1); return on; },
+    duck(d) { if (master && on) master.gain.setTargetAtTime(d ? .2 : .55, ac.currentTime, .25); },
+    sfx(kind) {
+      if (!ac || !on) return; const t = ac.currentTime + .01, out = master;
+      if (kind === "stamp") { drum(out, t, 110, 40, .5, .25); noise(out, t, .12, "lowpass", 900, .25); }
+      else if (kind === "chap") { drum(out, t, 70, 30, .6, 1.2); noise(out, t, .9, "lowpass", 300, .15); }
+      else if (kind === "pick") { noise(out, t, .05, "bandpass", 3000, .12, 4); drum(out, t, 300, 120, .12, .08); }
+      else if (kind === "key") noise(out, t, .025, "bandpass", 2600 + Math.random() * 800, .04, 5);
+      else if (kind === "knock") { drum(out, t, 160, 70, .55, .14); noise(out, t, .08, "lowpass", 600, .3); }
+      else if (kind === "shutter") { noise(out, t, .03, "highpass", 3000, .25); noise(out, t + .07, .04, "highpass", 2500, .2); }
+      else if (kind === "heart") { drum(out, t, 70, 38, .55, .22); drum(out, t + .26, 64, 36, .4, .2); }
+      else if (kind === "paper") noise(out, t, .25, "bandpass", 1600, .07, .8);
+      else if (kind === "whoosh") { const s = ac.createBufferSource(); s.buffer = noiseBuf; const f = ac.createBiquadFilter(); f.type = "bandpass"; f.Q.value = 1.5; f.frequency.setValueAtTime(300, t); f.frequency.exponentialRampToValueAtTime(2400, t + 1.2); const g = ac.createGain(); g.gain.setValueAtTime(.0001, t); g.gain.exponentialRampToValueAtTime(.12, t + .5); g.gain.exponentialRampToValueAtTime(.0001, t + 1.6); s.connect(f); f.connect(g); g.connect(out); s.start(t); s.stop(t + 1.7); }
+      else if (kind === "clock") { for (let k = 0; k < 10; k++) noise(out, t + k * .15, .02, "bandpass", k % 2 ? 3200 : 2400, .1, 6); }
+      else if (kind === "medal") { [84, 91, 96].forEach((n, k) => { const o = ac.createOscillator(), g = ac.createGain(); o.type = "sine"; o.frequency.value = mf(n); o.connect(g); g.connect(out); env(g, t + .5 + k * .08, .005, .06, 1.2); o.start(t + .5 + k * .08); o.stop(t + 2); }); }
+      else if (kind === "horn") { [41, 48].forEach(n => { const o = ac.createOscillator(), f = ac.createBiquadFilter(), g = ac.createGain(); o.type = "sawtooth"; o.frequency.value = mf(n); f.type = "lowpass"; f.frequency.value = 420; o.connect(f); f.connect(g); g.connect(out); g.gain.setValueAtTime(.0001, t); g.gain.exponentialRampToValueAtTime(.16, t + .5); g.gain.setValueAtTime(.16, t + 1.8); g.gain.exponentialRampToValueAtTime(.0001, t + 3.2); o.start(t); o.stop(t + 3.3); }); }
+      else if (kind === "engine") { [41, 41.3].forEach(n => { const o = ac.createOscillator(), f = ac.createBiquadFilter(), g = ac.createGain(); o.type = "sawtooth"; o.frequency.setValueAtTime(mf(n), t); o.frequency.linearRampToValueAtTime(mf(n + 7), t + 1.2); f.type = "lowpass"; f.frequency.value = 380; o.connect(f); f.connect(g); g.connect(out); env(g, t, .15, .09, 1.6); o.start(t); o.stop(t + 1.8); }); }
+      else if (kind === "skid") noise(out, t, .55, "bandpass", 2600, .12, 9);
+      else if (kind === "crash") { drum(out, t, 90, 30, .7, .5); noise(out, t, .6, "lowpass", 2400, .35); noise(out, t + .05, .4, "highpass", 4000, .12); }
+      else if (kind === "shot") { noise(out, t, .1, "highpass", 900, .3); drum(out, t, 220, 60, .25, .09); }
+      else if (kind === "boom") { drum(out, t, 80, 22, .8, 1.3); noise(out, t, 1.4, "lowpass", 420, .4); }
+      else if (kind === "whistle") { const o = ac.createOscillator(), g = ac.createGain(); o.type = "sine"; o.frequency.setValueAtTime(1900, t); o.frequency.exponentialRampToValueAtTime(520, t + 1.3); o.connect(g); g.connect(out); env(g, t, .2, .05, 1.3); o.start(t); o.stop(t + 1.5); }
+      else if (kind === "ring") { const o = ac.createOscillator(), g = ac.createGain(); o.type = "sine"; o.frequency.value = 3400; o.connect(g); g.connect(out); env(g, t, .05, .035, 2.4); o.start(t); o.stop(t + 2.6); }
+      else if (kind === "punch") { drum(out, t, 150, 50, .5, .12); noise(out, t, .06, "lowpass", 1400, .25); }
+      else if (kind === "click") { noise(out, t, .03, "bandpass", 4200, .25, 10); noise(out, t + .06, .03, "bandpass", 3000, .2, 10); }
+      else if (kind === "buzz") { const o = ac.createOscillator(), g = ac.createGain(); o.type = "square"; o.frequency.value = 110; o.connect(g); g.connect(out); env(g, t, .01, .05, .25); o.start(t); o.stop(t + .3); }
+      else if (kind === "sus") { [62, 63].forEach(n => { const o = ac.createOscillator(), g = ac.createGain(); o.type = "sine"; o.frequency.value = mf(n); o.connect(g); g.connect(out); env(g, t, .02, .06, .8); o.start(t); o.stop(t + .9); }); }
+    }
+  };
+})();
+const BG_TRACK = { park: "park", istanbul: "istanbul", office: "office", press: "press", beirut: "beirut", moscow: "moscow", berlin: "berlin", bridge: "bridge" };
+
+
+
+/* ================= 画面重现（没有可用历史照片时，用代码画出老照片风格的场景） ================= */
+const PHOTO_CAP = { pBerlin: "1956 年 · 柏林隧道", pMoscow: "1960 年代 · 莫斯科红场", p1934: "1930 年代 · 剑桥", p1945: "1940 年代 · 博斯普鲁斯海峡", p1951: "1951 年 5 月 · 夜班渡轮", p1955: "1955 年 11 月 · 伦敦", p1963: "1963 年 1 月 · 贝鲁特港" };
+function drawPhoto(key, c) {
+  const g = c.getContext("2d"), W = c.width, H = c.height, R = rng(key.length * 131 + key.charCodeAt(1));
+  const sky = (a, b, y = H) => { const gr = g.createLinearGradient(0, 0, 0, y); gr.addColorStop(0, a); gr.addColorStop(1, b); g.fillStyle = gr; g.fillRect(0, 0, W, y); };
+  const man = (x, y, s, o = {}) => { g.save(); g.translate(x, y); g.scale(s, s); g.fillStyle = o.c || "#1E1E1E";
+    g.beginPath(); g.moveTo(-34, 0); g.lineTo(-30, -92); g.quadraticCurveTo(0, -112, 30, -92); g.lineTo(34, 0); g.fill();
+    g.fillRect(-7, -116, 14, 14); g.beginPath(); g.ellipse(0, -128, 15, 18, 0, 0, Math.PI * 2); g.fill();
+    if (o.hat) { g.fillRect(-22, -144, 44, 5); g.beginPath(); g.ellipse(0, -146, 14, 10, 0, Math.PI, 0); g.fill(); }
+    else { g.beginPath(); g.ellipse(-2, -141, 16, 8, -.2, Math.PI, 0); g.fill(); }
+    if (o.light) { g.fillStyle = "#EDEDED"; g.beginPath(); g.moveTo(-6, -100); g.lineTo(0, -84); g.lineTo(6, -100); g.fill(); g.fillStyle = "#2A2A2A"; g.fillRect(-2, -98, 4, 22); }
+    if (o.case) { g.fillStyle = "#2A2A2A"; g.fillRect(26, -40, 30, 22); g.fillRect(36, -46, 10, 6); }
+    g.restore(); };
+  if (key === "p1934") {
+    sky("#BDBDBD", "#9A9A9A");
+    g.fillStyle = "#7E7E7E"; g.fillRect(0, H * .1, W, H * .9);
+    for (let i = 0; i < 3; i++) { const x = W * (.12 + i * .3), w = W * .2; g.fillStyle = "#5C5C5C"; g.fillRect(x, H * .25, w, H * .75); g.fillStyle = "#3A3A3A"; g.beginPath(); g.moveTo(x + w * .15, H); g.lineTo(x + w * .15, H * .48); g.arc(x + w / 2, H * .48, w * .35, Math.PI, 0); g.lineTo(x + w * .85, H); g.fill(); }
+    g.fillStyle = "#6A6A6A"; for (let i = 0; i < 9; i++) g.fillRect(W * i / 8 - 6, H * .08, 12, H * .1);
+    g.fillStyle = "#8C8C8C"; g.fillRect(0, H * .86, W, H * .14);
+    man(W * .56, H * .98, 1.9, { light: "#9C9C9C" });
+  } else if (key === "p1945") {
+    sky("#D2D2D2", "#B4B4B4", H * .55);
+    g.fillStyle = "#6E6E6E"; let x = 0; while (x < W) { const w = 30 + R() * 60, h = 20 + R() * 40; g.fillRect(x, H * .55 - h, w, h); x += w; }
+    const dome = (cx, r) => { g.fillStyle = "#4E4E4E"; g.beginPath(); g.arc(cx, H * .55 - 40, r, Math.PI, 0); g.fill(); g.fillRect(cx - r, H * .55 - 40, r * 2, 40); };
+    dome(W * .42, 62); dome(W * .3, 30); dome(W * .55, 34);
+    [[.2, 120], [.64, 130], [.36, 110], [.5, 116]].forEach(([fx, h]) => { g.fillStyle = "#4A4A4A"; g.fillRect(W * fx, H * .55 - h, 6, h); g.beginPath(); g.moveTo(W * fx - 2, H * .55 - h); g.lineTo(W * fx + 3, H * .55 - h - 18); g.lineTo(W * fx + 8, H * .55 - h); g.fill(); });
+    const sea = g.createLinearGradient(0, H * .55, 0, H); sea.addColorStop(0, "#9A9A9A"); sea.addColorStop(1, "#5A5A5A"); g.fillStyle = sea; g.fillRect(0, H * .55, W, H * .45);
+    g.strokeStyle = "rgba(230,230,230,.35)"; for (let i = 0; i < 40; i++) { const y = H * .58 + R() * H * .4, x0 = R() * W; g.beginPath(); g.moveTo(x0, y); g.lineTo(x0 + 20 + R() * 40, y); g.stroke(); }
+    g.fillStyle = "#2E2E2E"; g.beginPath(); g.moveTo(W * .58, H * .8); g.lineTo(W * .9, H * .8); g.lineTo(W * .86, H * .88); g.lineTo(W * .62, H * .88); g.fill(); g.fillRect(W * .66, H * .72, W * .14, H * .08); g.fillRect(W * .76, H * .64, 10, H * .08);
+    g.fillStyle = "rgba(60,60,60,.35)"; for (let i = 0; i < 6; i++) { g.beginPath(); g.arc(W * .77 + i * 14, H * .6 - i * 10, 10 + i * 3, 0, Math.PI * 2); g.fill(); }
+  } else if (key === "p1951") {
+    sky("#2A2A2A", "#444444");
+    g.fillStyle = "#151515"; g.fillRect(W * .5, H * .2, W * .5, H * .6); g.fillStyle = "#0E0E0E"; g.fillRect(W * .5, H * .62, W * .5, H * .06);
+    g.fillStyle = "rgba(230,230,220,.75)"; for (let i = 0; i < 7; i++) { g.beginPath(); g.arc(W * .56 + i * 38, H * .42, 5, 0, Math.PI * 2); g.fill(); }
+    g.strokeStyle = "#5A5A5A"; g.lineWidth = 4; g.beginPath(); g.moveTo(W * .3, H * .9); g.lineTo(W * .58, H * .6); g.stroke();
+    g.fillStyle = "#383838"; g.fillRect(0, H * .86, W, H * .14);
+    g.fillStyle = "#1A1A1A"; g.fillRect(W * .1, H * .2, 6, H * .66); const lg = g.createRadialGradient(W * .1 + 3, H * .2, 2, W * .1, H * .2, 120); lg.addColorStop(0, "rgba(255,255,240,.8)"); lg.addColorStop(1, "rgba(255,255,240,0)"); g.fillStyle = lg; g.fillRect(0, 0, W * .4, H * .6);
+    man(W * .3, H * .92, 1.25, { hat: true, case: true, c: "#0F0F0F" }); man(W * .42, H * .92, 1.18, { hat: true, case: true, c: "#141414" });
+    g.strokeStyle = "rgba(200,200,200,.25)"; g.lineWidth = 1; for (let i = 0; i < 120; i++) { const x = R() * W, y = R() * H; g.beginPath(); g.moveTo(x, y); g.lineTo(x - 3, y + 12); g.stroke(); }
+  } else if (key === "p1955") {
+    sky("#A8A8A8", "#8A8A8A");
+    g.fillStyle = "#6C6C6C"; g.fillRect(W * .25, 0, W * .5, H * .78);
+    g.fillStyle = "#2C2C2C"; g.fillRect(W * .42, H * .3, W * .16, H * .48); g.fillStyle = "#4E4E4E"; g.fillRect(W * .4, H * .26, W * .2, H * .04);
+    g.fillStyle = "#D8D8D8"; for (let i = 0; i < 2; i++) for (let j = 0; j < 2; j++) g.fillRect(W * (.29 + j * .32), H * (.08 + i * .3), W * .08, H * .16);
+    g.fillStyle = "#8E8E8E"; for (let i = 0; i < 3; i++) g.fillRect(W * (.38 - i * .02), H * (.78 + i * .05), W * (.24 + i * .04), H * .05);
+    man(W * .5, H * .78, 1.25, { light: "#B4B4B4" });
+    const cam = (x, s) => { g.save(); g.translate(x, H); g.scale(s, s); g.fillStyle = "#121212"; g.beginPath(); g.ellipse(0, -40, 46, 70, 0, Math.PI, 0); g.fill(); g.beginPath(); g.ellipse(0, -118, 20, 24, 0, 0, Math.PI * 2); g.fill(); g.fillRect(-14, -150, 28, 24); g.fillStyle = "#0A0A0A"; g.fillRect(-18, -130, 36, 22); g.fillStyle = "#DDD"; g.beginPath(); g.arc(0, -160, 14, 0, Math.PI * 2); g.fill(); g.restore(); };
+    cam(W * .12, 1.3); cam(W * .3, 1.1); cam(W * .74, 1.15); cam(W * .92, 1.35);
+    const fl = g.createRadialGradient(W * .3, H * .55, 4, W * .3, H * .55, 150); fl.addColorStop(0, "rgba(255,255,255,.85)"); fl.addColorStop(1, "rgba(255,255,255,0)"); g.fillStyle = fl; g.fillRect(0, 0, W, H);
+  } else if (key === "pBerlin") {
+    g.fillStyle = "#1A1A1A"; g.fillRect(0, 0, W, H);
+    const cx = W * .5, cy = H * .46;
+    for (let k = 0; k < 11; k++) { const r = W * .62 * Math.pow(.74, k); g.fillStyle = k % 2 ? "#3C3C3C" : "#474747"; g.beginPath(); g.arc(cx, cy, r, 0, Math.PI * 2); g.fill(); g.strokeStyle = "#232323"; g.lineWidth = Math.max(1, 8 * Math.pow(.74, k)); g.stroke(); }
+    const lamp = g.createRadialGradient(cx, cy, 2, cx, cy, W * .09); lamp.addColorStop(0, "rgba(255,255,235,.95)"); lamp.addColorStop(1, "rgba(255,255,235,0)"); g.fillStyle = lamp; g.fillRect(0, 0, W, H);
+    g.fillStyle = "#555"; g.beginPath(); g.moveTo(0, H); g.lineTo(cx - 14, cy + 22); g.lineTo(cx + 14, cy + 22); g.lineTo(W, H); g.fill();
+    g.strokeStyle = "#121212"; g.lineWidth = 3; for (let k = 0; k < 5; k++) { g.beginPath(); g.moveTo(0, H * (.3 + k * .05)); g.quadraticCurveTo(W * .25, H * (.36 + k * .03), cx - 30, cy - 6 + k * 4); g.stroke(); }
+    g.fillStyle = "#262626"; g.fillRect(W * .66, H * .5, W * .22, H * .5); g.fillStyle = "#6A6A6A"; for (let k = 0; k < 5; k++) g.fillRect(W * .68, H * (.54 + k * .08), W * .18, H * .04);
+    g.fillStyle = "rgba(240,240,230,.85)"; [[.7, .555], [.74, .635], [.82, .715], [.76, .795]].forEach(([a, b]) => { g.beginPath(); g.arc(W * a, H * b, 3, 0, Math.PI * 2); g.fill(); });
+    man(W * .58, H * 1.02, 1.05, { c: "#0E0E0E" }); g.strokeStyle = "#0E0E0E"; g.lineWidth = 5; g.beginPath(); g.arc(W * .58, H * 1.02 - 140, 19, Math.PI * 1.05, Math.PI * 1.95); g.stroke();
+  } else if (key === "pMoscow") {
+    sky("#9A9A9A", "#C4C4C4", H * .6);
+    g.fillStyle = "#4A4A4A"; g.fillRect(0, H * .42, W * .55, H * .18); for (let x = 0; x < W * .55; x += 16) g.fillRect(x, H * .4, 9, H * .03);
+    g.fillStyle = "#3A3A3A"; g.fillRect(W * .2, H * .12, W * .07, H * .48); g.beginPath(); g.moveTo(W * .2, H * .12); g.lineTo(W * .235, H * .02); g.lineTo(W * .27, H * .12); g.fill();
+    g.fillStyle = "#DADADA"; g.beginPath(); g.arc(W * .235, H * .26, 10, 0, Math.PI * 2); g.fill();
+    [[.7, 60, .26], [.8, 44, .2], [.62, 36, .18], [.88, 34, .16]].forEach(([fx, bw, fh]) => { const x = W * fx, top = H * (.6 - fh); g.fillStyle = "#333"; g.fillRect(x - bw * .4, top, bw * .8, H * .6 - top); g.beginPath(); g.moveTo(x - bw * .45, top); g.bezierCurveTo(x - bw * .55, top - bw * .5, x - bw * .1, top - bw * .55, x, top - bw); g.bezierCurveTo(x + bw * .1, top - bw * .55, x + bw * .55, top - bw * .5, x + bw * .45, top); g.fill(); });
+    g.fillStyle = "#E4E4E4"; g.fillRect(0, H * .6, W, H * .4);
+    g.fillStyle = "rgba(120,120,120,.4)"; for (let i = 0; i < 9; i++) g.fillRect(0, H * (.64 + i * .04), W, 2);
+    man(W * .42, H * .92, 1.05, { hat: true, c: "#141414" }); man(W * .52, H * .88, .7, { hat: true, c: "#222" });
+    g.fillStyle = "rgba(255,255,255,.75)"; for (let i = 0; i < 220; i++) g.fillRect(R() * W, R() * H, 2, 2);
+  } else if (key === "p1963") {
+    sky("#1A1A1A", "#3A3A3A", H * .5);
+    g.fillStyle = "#101010"; g.beginPath(); g.moveTo(0, H * .5); g.quadraticCurveTo(W * .3, H * .36, W * .6, H * .46); g.lineTo(W, H * .44); g.lineTo(W, H * .5); g.fill();
+    g.fillStyle = "rgba(230,230,210,.7)"; for (let i = 0; i < 40; i++) g.fillRect(R() * W, H * .4 + R() * H * .1, 2, 2);
+    const sea = g.createLinearGradient(0, H * .5, 0, H); sea.addColorStop(0, "#2C2C2C"); sea.addColorStop(1, "#0C0C0C"); g.fillStyle = sea; g.fillRect(0, H * .5, W, H * .5);
+    g.fillStyle = "#080808"; g.beginPath(); g.moveTo(W * .3, H * .66); g.lineTo(W * .96, H * .66); g.lineTo(W * .92, H * .76); g.lineTo(W * .34, H * .76); g.fill(); g.fillRect(W * .62, H * .52, W * .12, H * .14); g.fillRect(W * .68, H * .44, 10, H * .08); g.fillRect(W * .42, H * .4, 4, H * .26); g.fillRect(W * .86, H * .42, 4, H * .24);
+    g.fillStyle = "rgba(240,240,220,.85)"; [[.64, .56], [.68, .56], [.72, .56], [.45, .62], [.88, .6]].forEach(([a, b]) => g.fillRect(W * a, H * b, 4, 4));
+    g.strokeStyle = "rgba(240,240,220,.2)"; g.lineWidth = 2; for (let i = 0; i < 8; i++) { g.beginPath(); g.moveTo(W * .6, H * (.8 + i * .025)); g.lineTo(W * .76, H * (.8 + i * .025)); g.stroke(); }
+    g.fillStyle = "#222"; g.fillRect(0, H * .88, W * .5, H * .12); man(W * .2, H * .9, .9, { hat: true, c: "#060606" });
+    g.strokeStyle = "rgba(200,200,200,.22)"; g.lineWidth = 1; for (let i = 0; i < 160; i++) { const x = R() * W, y = R() * H; g.beginPath(); g.moveTo(x, y); g.lineTo(x - 3, y + 12); g.stroke(); }
+  }
+  /* 老照片处理：转为棕褐色、颗粒、划痕、暗角 */
+  const im = g.getImageData(0, 0, W, H), a = im.data;
+  for (let i = 0; i < a.length; i += 4) { const v = .3 * a[i] + .59 * a[i + 1] + .11 * a[i + 2], n = (Math.random() - .5) * 26; a[i] = Math.min(255, v * 1.07 + 18 + n); a[i + 1] = Math.min(255, v * .98 + 8 + n); a[i + 2] = Math.min(255, v * .82 + n); }
+  g.putImageData(im, 0, 0);
+  g.strokeStyle = "rgba(255,248,230,.35)"; g.lineWidth = 1; for (let i = 0; i < 5; i++) { const x = R() * W; g.beginPath(); g.moveTo(x, 0); g.lineTo(x + (R() - .5) * 20, H); g.stroke(); }
+  g.fillStyle = "rgba(255,248,230,.5)"; for (let i = 0; i < 30; i++) g.fillRect(R() * W, R() * H, 1 + R() * 2, 1 + R() * 2);
+  const v = g.createRadialGradient(W / 2, H / 2, Math.min(W, H) * .3, W / 2, H / 2, Math.max(W, H) * .7); v.addColorStop(0, "rgba(0,0,0,0)"); v.addColorStop(1, "rgba(40,25,10,.6)"); g.fillStyle = v; g.fillRect(0, 0, W, H);
+}
+
+/* ================= 镜头与动态道具（每句台词、每个选项各有对应动作） ================= */
+const camEl = $("#cam"), propsEl = $("#props");
+let decT = null;
+function camMove(kind) {
+  const r = (a, b) => a + Math.random() * (b - a);
+  let sc, tx, ty, dur = 7;
+  if (kind === "in") { sc = 1.17; tx = r(-1, 1); ty = r(-1.5, 0); dur = 3; }
+  else if (kind === "out") { sc = 1.0; tx = 0; ty = 0; dur = 3.5; }
+  else if (kind === "right") { sc = 1.12; tx = -4.5; ty = -1; dur = 4; }
+  else if (kind === "reset") { sc = 1.02; tx = 0; ty = 0; dur = 0; }
+  else { sc = r(1.04, 1.09); tx = r(-2, 2); ty = r(-1.5, 1.5); }
+  camEl.style.transitionDuration = (reduced() ? 0 : dur) + "s";
+  camEl.style.transform = `translate(${tx}%,${ty}%) scale(${sc})`;
+}
+function clearProps() { clearInterval(decT); propsEl.innerHTML = ""; }
+function shake() { const g = $("#game"); g.classList.remove("shake"); void g.offsetWidth; g.classList.add("shake"); }
+function typeInto(el, text, decrypt) {
+  clearInterval(decT); const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789#%&"; let k = 0;
+  if (reduced()) { el.textContent = text; return; }
+  decT = setInterval(() => {
+    k++;
+    if (decrypt) { const fixed = Math.floor(k / 2); el.textContent = [...text].map((c, i) => i < fixed || c === " " ? c : chars[(Math.random() * chars.length) | 0]).join(""); if (fixed >= text.length) { el.textContent = text; clearInterval(decT); } }
+    else { el.textContent = text.slice(0, k); if (k % 2) Music.sfx("key"); if (k >= text.length) clearInterval(decT); }
+  }, decrypt ? 45 : 55);
+}
+const CITY = { TERUEL: "特鲁埃尔", BERLIN: "柏林", VORKUTA: "沃尔库塔", GENEVA: "日内瓦", VIENNA: "维也纳", LONDON: "伦敦", ISTANBUL: "伊斯坦布尔", WASHINGTON: "华盛顿", BEIRUT: "贝鲁特", MOSCOW: "莫斯科", DOVER: "多佛", CALAIS: "加莱", ABROAD: "国外", ODESSA: "敖德萨", PIRAEUS: "比雷埃夫斯", DAMASCUS: "大马士革" };
+function cue(fx) {
+  if (!fx) return;
+  if (fx.cam) camMove(fx.cam);
+  let h = "";
+  if (fx.telegram) h = `<div class="tg"><p class="tg-h"><span>TELEGRAM</span><span>${esc(fx.telegram.from)}</span></p><p class="tg-b"></p></div>`;
+  else if (fx.doc) { const d = fx.doc; h = `<div class="pd">${d.photo ? '<span class="ph"></span>' : ""}<p class="pd-t">${esc(d.title)}</p><ul>${d.lines.map((l, i) => `<li style="animation-delay:${.35 + i * .28}s"><span class="${d.hl === i ? "hl" : ""}">${esc(l)}</span>${d.redact && i < d.lines.length - 1 ? `<span class="bar" style="animation-delay:${.6 + i * .28}s"></span>` : ""}</li>`).join("")}</ul>${d.sign ? '<svg class="sig" viewBox="0 0 180 44"><path d="M6,30 C20,6 30,40 42,22 S60,8 66,28 C70,40 84,10 92,24 S112,36 120,18 C126,8 134,34 146,26 S168,14 174,20"/></svg>' : ""}${d.stamp ? `<span class="st">${esc(d.stamp)}</span>` : ""}</div>`; }
+  else if (fx.note) h = `<div class="nt">${esc(fx.note)}${fx.sub ? `<small>${esc(fx.sub)}</small>` : ""}</div>`;
+  else if (fx.news) h = `<div class="np"><p class="np-m"><span>EXTRA</span><span>号外</span></p><p class="np-h">${esc(fx.news.text)}</p><p class="np-s">${esc(fx.news.sub || "")}</p><div class="np-c">${"<div><i></i><i></i><i></i><i style=\"width:70%\"></i></div>".repeat(3)}</div></div>`;
+  else if (fx.stamp) h = `<div class="stp">${esc(fx.stamp)}</div>`;
+  else if (fx.medal) h = `<div class="md"><svg viewBox="0 0 120 190"><path d="M38,0 L82,0 L78,92 L42,92Z" fill="#B3261E"/><path d="M50,0 L70,0 L68,92 L52,92Z" fill="#E2B33C"/><circle cx="60" cy="130" r="40" fill="#C9A24A" stroke="#8E6A22" stroke-width="4"/><path d="M60,104 L66,124 L86,130 L66,136 L60,156 L54,136 L34,130 L54,124Z" fill="#9C2A20"/><circle cx="60" cy="130" r="40" fill="none" stroke="#F3D98A" stroke-width="2" opacity=".6"/></svg></div>`;
+  else if (fx.skip) h = `<div class="ck"><svg viewBox="0 0 120 120"><circle cx="60" cy="60" r="54" fill="rgba(233,225,207,.92)" stroke="#24201A" stroke-width="4"/>${Array.from({ length: 12 }, (_, i) => `<line x1="60" y1="12" x2="60" y2="20" stroke="#24201A" stroke-width="3" transform="rotate(${i * 30} 60 60)"/>`).join("")}<line class="hh" x1="60" y1="60" x2="60" y2="34" stroke="#24201A" stroke-width="5" stroke-linecap="round"/><line class="mh" x1="60" y1="60" x2="60" y2="20" stroke="#B3261E" stroke-width="3" stroke-linecap="round"/><circle cx="60" cy="60" r="4" fill="#24201A"/></svg><p>${esc(fx.skip)}</p></div>`;
+  if (fx.map) {
+    const [a, b] = fx.map, path = "M70,150 Q280,10 490,110";
+    h = `<div class="mp${fx.slow ? " slow" : ""}"><svg viewBox="0 0 560 200" role="img" aria-label="${CITY[a] || a} 到 ${CITY[b] || b}">${Array.from({ length: 9 }, (_, i) => `<line x1="${i * 70}" y1="0" x2="${i * 70}" y2="200" stroke="rgba(233,225,207,.07)"/>`).join("")}${Array.from({ length: 4 }, (_, i) => `<line x1="0" y1="${i * 50 + 25}" x2="560" y2="${i * 50 + 25}" stroke="rgba(233,225,207,.07)"/>`).join("")}
+      <path class="rt" d="${path}"/><circle cx="70" cy="150" r="6" fill="#E9E1CF"/><circle cx="490" cy="110" r="6" fill="#B3261E"/>
+      <circle r="5" fill="#D9A441"><animateMotion dur="${fx.slow ? 3.6 : 1.8}s" fill="freeze" path="${path}"/></circle>
+      <text x="70" y="182" fill="#E9E1CF" font-family="Special Elite, monospace" font-size="15" text-anchor="middle">${a}</text><text x="70" y="128" fill="#A9A396" font-size="13" text-anchor="middle">${CITY[a] || ""}</text>
+      <text x="490" y="142" fill="#E9E1CF" font-family="Special Elite, monospace" font-size="15" text-anchor="middle">${b}</text><text x="490" y="88" fill="#A9A396" font-size="13" text-anchor="middle">${CITY[b] || ""}</text></svg></div>`;
+    Music.sfx("whoosh");
+  }
+  propsEl.innerHTML = h;
+  if (fx.telegram) { typeInto(propsEl.querySelector(".tg-b"), fx.telegram.text, fx.telegram.decrypt); Music.sfx("paper"); }
+  if (fx.doc || fx.note || fx.news) Music.sfx("paper");
+  if (fx.doc && fx.doc.stamp) setTimeout(() => Music.sfx("stamp"), 1100);
+  if (fx.stamp) Music.sfx("stamp");
+  if (fx.skip) Music.sfx("clock");
+  if (fx.medal) Music.sfx("medal");
+  if (fx.flash) { const f = $("#flashfx"); for (let i = 0; i < fx.flash; i++) setTimeout(() => { Music.sfx("shutter"); if (!reduced()) f.animate([{ opacity: .85 }, { opacity: 0 }], { duration: 260, easing: "ease-out" }); }, i * 380 + Math.random() * 120); }
+  if (fx.heart) { const hf = $("#heartfx"); hf.classList.remove("on"); void hf.offsetWidth; hf.classList.add("on"); Music.sfx("heart"); setTimeout(() => Music.sfx("heart"), 1300); }
+  if (fx.knock) { [0, 260, 520].forEach(t => setTimeout(() => { Music.sfx("knock"); if (!reduced()) shake(); }, t)); }
+  if (fx.rain) $("#rainfx").classList.add("on");
+  if (fx.horn) { Music.sfx("horn"); camMove("in"); }
+}
+
+
+/* ================= 动作过场：飙车、枪战、打斗、潜行、开保险柜（全部代码绘制，可跳过） ================= */
+const ACTS = {
+  war41: { tag: "史实 · 档案闪回", log: "1941–1944：来源名册与第九科", lives: 9, music: "keep", shots: [
+    { r: "news", kind: "file", d: 4.2, head: "任务：来源名册", lines: ["地点：圣奥尔本斯 · 中央档案室", "目标：军情六处在苏联的特工名册", "交给：莫斯科"], cap: "1941 年，你和档案室的主管成了朋友。他把军情六处在苏联的特工名册借给了你，你原样抄给了莫斯科。" },
+    { r: "news", kind: "file", d: 4.4, head: "莫斯科中心 · 评估", lines: ["来源：SÖHNCHEN", "内容：英国在苏联几乎没有特工", "结论：好得不像真的，可能是圈套"], cap: "讽刺的是，名册上几乎是空的。莫斯科反而起了疑心，一度怀疑你们剑桥这几个人，全是英国派来的。" },
+    { r: "news", kind: "file", d: 4.2, head: "备忘录", lines: ["致：维维安上校", "关于第九科科长人选", "科吉尔：不宜担任"], cap: "1944 年，军情六处要成立专门对付苏联的第九科。你帮维维安上校把呼声最高的科吉尔挤了出去。" },
+    { r: "news", kind: "award", d: 4.6, head: "任命书", sub: "第九科科长", lines: ["H. A. R. PHILBY", "1944 年 · 即日生效"], cap: "局长亲自签了任命书。从此，英国对苏联的反间谍工作，由一个苏联间谍负责。" } ] },
+  turkey: { tag: "史实 · 档案闪回", log: "1946–1949：授勋与土耳其", lives: 9, music: "keep", shots: [
+    { r: "news", kind: "award", medal: true, d: 4.8, head: "大英帝国官佐勋章", sub: "O.B.E. · 1946", lines: ["授予：H. A. R. PHILBY", "表彰其战时情报工作"], cap: "1946 年，你因为战时的情报工作获颁大英帝国官佐勋章。授勋的人谁也不知道，你同时也在替莫斯科工作。" },
+    { r: "news", kind: "file", d: 4.6, head: "任务：边境勘察", lines: ["1947 · 驻土耳其站站长", "全景拍摄土苏边境哨所与山口", "照片：伦敦一份，莫斯科一份"], cap: "1947 年，你当上了驻土耳其站站长，带人沿着土苏边境拍了一整套全景照片。洗出来的照片，伦敦一份，莫斯科一份。" },
+    { r: "news", kind: "file", d: 4.6, head: "越境行动 · 报告", lines: ["格鲁吉亚流亡者越境潜入苏联", "路线与时间：已提前告知莫斯科", "结果：遭苏联边防军截击"], cap: "伦敦又要你往苏联格鲁吉亚派人。越境的路线和时间，莫斯科比他们自己知道得还早。" } ] },
+  climber: { tag: "史实 · 画面演绎", log: "格鲁吉亚越境行动遭伏击", lives: 9, shots: [
+    { r: "gun", place: "ridge", snow: true, noHero: true, walk: 3, d: 4, cap: "1948 年前后 · 土耳其和苏联格鲁吉亚交界的山口" },
+    { r: "gun", place: "ridge", snow: true, noHero: true, ambush: true, n: 3, d: 4.2, cap: "越境的人刚走进苏联境内，山上的枪就响了。" } ] },
+  brief55: { tag: "背景 · 1951–1955", log: "1951–1955 年发生了什么", lives: 9, music: "keep", shots: [
+    { r: "news", d: 3.8, date: "1951 年 6 月 7 日", head: "两名英国外交官失踪", sub: "伯吉斯与麦克林下落不明 · 疑已出走", photo: 2, cap: "1951 年 6 月，伯吉斯和麦克林失踪的消息登上了所有报纸的头版。" },
+    { r: "news", kind: "file", d: 4.2, head: "军情五处 · 问询记录", lines: ["对象：H. A. R. PHILBY", "与伯吉斯关系密切", "结论：证据不足", "处理：劝其辞职"], cap: "你被从华盛顿召回伦敦。军情五处审了你好几轮，什么也没问出来，但军情六处还是让你辞了职。" },
+    { r: "news", d: 4.2, date: "1954 年 4 月", head: "苏联外交官在澳大利亚叛逃", sub: "彼得罗夫夫妇寻求政治庇护", photo: 2, cap: "1954 年，苏联特工彼得罗夫在澳大利亚叛逃。他后来作证：伯吉斯和麦克林是苏联间谍，出逃前有人给他们报了信。" },
+    { r: "news", d: 3.8, date: "1955 年 9 月", head: "外交部公布白皮书", sub: "伯吉斯、麦克林案 · 谁通风报信？", cap: "1955 年 9 月，迫于舆论，英国政府公布了这个案子的白皮书。所有人都在问：那个报信的人是谁？" },
+    { r: "news", d: 3.8, date: "1955 年 10 月 25 日", head: "议员点名：第三人是菲尔比？", sub: "下议院质询引发轩然大波", photo: 1, cap: "10 月 25 日，工党议员马库斯·利普顿在下议院点了你的名字。" } ] },
+  brief55e: { tag: "背景 · 1951–1955", log: "1951–1955 年发生了什么", lives: 9, music: "keep", shots: [
+    { r: "news", d: 3.8, date: "1951 年 6 月 7 日", head: "两名英国外交官失踪", sub: "伯吉斯与麦克林下落不明 · 疑已出走", photo: 2, cap: "1951 年 6 月，伯吉斯和麦克林失踪的消息登上了所有报纸的头版。" },
+    { r: "news", kind: "file", d: 4, head: "军情六处 · 内部评估", lines: ["联络官 H. A. R. PHILBY", "曾提前预警麦克林案", "建议：晋升"], cap: "在伦敦看来，你是那个差一点就抓住他们的人。你没有被怀疑，反而升了职。" },
+    { r: "news", d: 4.2, date: "1954 年 4 月", head: "苏联外交官在澳大利亚叛逃", sub: "彼得罗夫夫妇寻求政治庇护", photo: 2, cap: "1954 年，苏联特工彼得罗夫在澳大利亚叛逃。他后来作证：伯吉斯和麦克林是苏联间谍，出逃前有人给他们报了信。" },
+    { r: "news", d: 3.8, date: "1955 年 10 月", head: "剑桥间谍案：还有一个人是谁？", sub: "议会要求公开调查", photo: 1, cap: "报纸开始翻剑桥的旧账。和伯吉斯、麦克林同一届的剑桥毕业生，一个接一个被记者找上门。" } ] },
+  brief55m: { tag: "背景 · 1951–1955", log: "1951–1955 年发生了什么", lives: 9, music: "keep", shots: [
+    { r: "news", d: 3.8, date: "1951 年 5 月 26 日", head: "外交官麦克林被捕", sub: "据信为苏联间谍「荷马」", photo: 1, cap: "1951 年，麦克林被捕。审讯持续了好几个月，他始终没有说出你的名字。" },
+    { r: "news", d: 3.8, date: "1951 年 6 月", head: "伯吉斯辞职后行踪不明", sub: "外交部拒绝置评", photo: 1, cap: "伯吉斯没有等到审讯，一个人去了莫斯科。剑桥的朋友，只剩你还留在原地。" },
+    { r: "news", d: 4.2, date: "1954 年 4 月", head: "苏联外交官在澳大利亚叛逃", sub: "彼得罗夫夫妇寻求政治庇护", photo: 2, cap: "1954 年，苏联特工彼得罗夫在澳大利亚叛逃。他后来作证：伯吉斯和麦克林是苏联间谍，出逃前有人给他们报了信。" },
+    { r: "news", d: 3.8, date: "1955 年 10 月", head: "剑桥间谍案：还有一个人是谁？", sub: "议会要求公开调查", photo: 1, cap: "报纸开始翻剑桥的旧账：麦克林背后，是不是还有一个人？" } ] },
+  spain: { tag: "史实 · 画面演绎", log: "特鲁埃尔前线，炮弹落在记者的车旁", lives: 9, shots: [
+    { r: "shell", d: 3.4, cap: "1937 年 12 月 31 日 · 特鲁埃尔前线" },
+    { r: "shell", d: 2, cap: "炮弹的呼啸声越来越近。", q: { type: "tap", label: "趴下！", at: .5, win: 1.4, sfx: "whistle" }, after: 2.2 } ] },
+  volkov: { tag: "史实 · 画面演绎", log: "沃尔科夫被抬上苏联飞机", lives: 9, music: "stealth", shots: [
+    { r: "panel", d: 4.2, cap: "1945 年 9 月 · 伊斯坦布尔机场" },
+    { r: "panel", d: 4.6, z: 1, cap: "两副担架被抬上一架苏联飞机。担架上的人，从头到脚缠着绷带。" } ] },
+  albania: { tag: "史实 · 画面演绎", log: "阿尔巴尼亚空投行动遭伏击", lives: 9, shots: [
+    { r: "gun", place: "ridge", noHero: true, para: true, d: 4.2, cap: "1949 年 · 阿尔巴尼亚山区 · 夜" },
+    { r: "gun", place: "ridge", noHero: true, ambush: true, d: 4.6, cap: "他们一落地，山上的枪就响了。" } ] },
+  southampton: { tag: "史实 · 画面演绎", log: "伯吉斯和麦克林连夜赶往南安普敦", lives: 9, shots: [
+    { r: "road", place: "country", d: 3, clock: "23:15", cap: "1951 年 5 月 25 日 · 去南安普敦的路上" },
+    { r: "road", place: "country", d: 1.4, clock: "23:31", ob: "truck", cap: "前面有一辆慢吞吞的卡车。", q: { type: "lane", at: .4, win: 1.6 } },
+    { r: "road", place: "country", d: 1.4, clock: "23:46", ob: "truck", cap: "又一辆。", q: { type: "lane", at: .3, win: 1.4 } },
+    { r: "road", place: "dock", d: 3.4, clock: "23:58", cap: "渡轮正在收舷梯。" } ] },
+  tail: { tag: "画面演绎", log: "甩开盯梢去接头", lives: 1, music: "stealth", shots: [
+    { r: "sneak", place: "street", d: 2.6, cap: "伦敦北区 · 晚上十点。路灯下有个人在看报纸。" },
+    { r: "sneak", place: "street", d: 1, cap: "他抬头的时候，别动。", q: { type: "sneak", n: 4, at: .2, win: 15 } } ] },
+  port: { tag: "画面演绎", log: "雨夜潜行到苏联货船", lives: 9, music: "stealth", shots: [
+    { r: "sneak", place: "port", d: 2.6, cap: "1 月 23 日 · 贝鲁特港 · 雨" },
+    { r: "sneak", place: "port", d: 1, cap: "多尔马托瓦号就在前面。码头上有人打着手电。", q: { type: "sneak", n: 4, at: .2, win: 15 } } ] },
+  arrest: { tag: "虚构", log: "莫斯科公寓里的挣扎", lives: 1, shots: [
+    { r: "fight", place: "room", d: 2.2, cap: "两个人一左一右走了进来。" },
+    { r: "fight", place: "room", d: 1, cap: "他们抓住了你的胳膊。", q: { type: "mash", n: 9, at: .2, win: 3.2 } } ] },
+  tunnel: { tag: "虚构", log: "柏林隧道里的枪战", lives: 9, shots: [
+    { r: "gun", place: "tunnel", d: 2.4, cap: "隧道里还有人。" },
+    { r: "gun", place: "tunnel", d: 1, cap: "左边那个探出头了。", q: { type: "tap", label: "还击！", at: .5, win: 1.2 } },
+    { r: "gun", place: "tunnel", d: 1, cap: "还有一个。", q: { type: "tap", label: "还击！", at: .4, win: 1.0 } } ] },
+  berlin: { tag: "虚构", log: "东柏林雨夜追车", lives: 2, shots: [
+    { r: "road", place: "city", rain: true, chase: true, d: 3, cap: "东柏林 · 雨夜。后面那辆车跟了你三个路口。" },
+    { r: "road", place: "city", rain: true, chase: true, gun: true, d: 1.2, ob: "truck", cap: "他们开枪了。", q: { type: "lane", at: .4, win: 1.3 } },
+    { r: "road", place: "city", rain: true, chase: true, gun: true, d: 1.2, ob: "tram", cap: "前面是电车。", q: { type: "lane", at: .3, win: 1.2 } },
+    { r: "road", place: "city", rain: true, chase: true, d: 1.2, ob: "barrier", cap: "哨卡的栏杆正在放下来。", q: { type: "lane", at: .3, win: 1.1 } } ] },
+  heist: { tag: "虚构", log: "潜入苏联商务代表处开保险柜", lives: 1, music: "stealth", shots: [
+    { r: "sneak", place: "office", d: 2.4, cap: "苏联商务代表处 · 凌晨两点" },
+    { r: "sneak", place: "office", d: 1, cap: "守夜人在走廊里巡逻。", q: { type: "sneak", n: 3, at: .2, win: 13 } },
+    { r: "dial", d: 1, cap: "三个数字。指针对准金色刻度时按下。", q: { type: "dial", n: 3, at: .4, win: 16 } } ] },
+  coast: { tag: "虚构", log: "贝鲁特沿海公路追车", lives: 2, shots: [
+    { r: "road", place: "coast", chase: true, d: 3, cap: "贝鲁特 · 沿海公路 · 20:45" },
+    { r: "road", place: "coast", chase: true, gun: true, d: 1.2, ob: "truck", cap: "两辆车都在开枪。不知道哪一辆想要你的命。", q: { type: "lane", at: .4, win: 1.3 } },
+    { r: "road", place: "coast", chase: true, gun: true, d: 1.2, ob: "truck", cap: "前面是急弯。", q: { type: "lane", at: .3, win: 1.15 } },
+    { r: "road", place: "coast", chase: true, d: 1.2, ob: "barrier", cap: "机场的灯就在前面。", q: { type: "lane", at: .3, win: 1.1 } } ] },
+  dock: { tag: "虚构", log: "码头打斗", lives: 2, shots: [
+    { r: "fight", place: "dock", d: 2, foes: 2, cap: "两个人围了上来。" },
+    { r: "fight", place: "dock", d: 1, foes: 2, cap: "左边的人挥拳了。", q: { type: "dir", k: "L", at: .3, win: 1.1 } },
+    { r: "fight", place: "dock", d: 1, foes: 2, cap: "有人从背后勒住了你。", q: { type: "mash", n: 10, at: .2, win: 3.2 } } ] }
+};
+const actEl = $("#act"), actC = $("#actc"), actG = actC.getContext("2d");
+let actTok = 0, actKey = null;
+const POSE = { stand: [0, .2, .3, -.2, .35, .1, -.1], walk1: [.06, .45, .4, -.45, .3, .38, -.32], walk2: [.06, -.35, .3, .4, .4, -.32, .38],
+  punch: [.25, 1.55, 0, -.2, 1.4, .45, -.28], block: [-.1, 2.4, -1.9, 2.2, -1.7, .25, -.2], hit: [-.45, -.5, .6, -.9, .4, .15, -.4],
+  grab: [.2, 1.3, .3, 1.1, .5, .38, -.28], strain: [-.15, 1.0, .9, .7, 1.0, .5, -.45], crouch: [.55, 1.3, .2, .7, 1.1, 1.25, -.95], aim: [.08, 1.57, 0, 1.35, .25, .25, -.2],
+  read: [0, .9, 1.9, .9, 1.9, .1, -.1], carry: [0, 1.1, .5, 1.1, .5, .2, -.2] };
+function fig(g, x, y, s, face, pose, o = {}) {
+  if (pose === "down") { g.save(); g.translate(x, y - 7 * s); g.rotate(-face * Math.PI / 2); fig(g, 0, 0, s, face, "stand", o); g.restore(); return [x, y]; }
+  const [lean, a1, b1, a2, b2, l1, l2] = POSE[pose] || POSE.stand, L = 46 * s, T = 50 * s, U = 25 * s, F = 23 * s;
+  const sx = a => Math.sin(a) * face, cy = a => Math.cos(a);
+  const hy = y - L * Math.max(cy(l1), cy(l2)), hx = x, nx = hx + T * Math.sin(lean) * face, ny = hy - T * Math.cos(lean);
+  g.save(); g.strokeStyle = g.fillStyle = o.c || "#07080B"; g.lineCap = "round"; g.lineJoin = "round";
+  g.lineWidth = 12 * s; g.beginPath(); g.moveTo(hx + L * sx(l1), hy + L * cy(l1)); g.lineTo(hx, hy); g.lineTo(hx + L * sx(l2), hy + L * cy(l2)); g.stroke();
+  g.lineWidth = 18 * s; g.beginPath(); g.moveTo(hx, hy); g.lineTo(nx, ny); g.stroke();
+  g.lineWidth = 9 * s; let hand = [nx, ny];
+  [[a1, b1], [a2, b2]].forEach(([a, b], k) => { const ex = nx + U * sx(a), ey = ny + 5 * s + U * cy(a), fx = ex + F * sx(a + b), fy = ey + F * cy(a + b); g.beginPath(); g.moveTo(nx, ny + 5 * s); g.lineTo(ex, ey); g.lineTo(fx, fy); g.stroke(); if (!k) hand = [fx, fy]; });
+  const hx2 = nx + 14 * s * Math.sin(lean) * face, hy2 = ny - 14 * s * Math.cos(lean);
+  g.beginPath(); g.arc(hx2, hy2, 10.5 * s, 0, Math.PI * 2); g.fill();
+  if (o.hat) { g.fillRect(hx2 - 15 * s, hy2 - 9 * s, 30 * s, 3.5 * s); g.beginPath(); g.ellipse(hx2, hy2 - 10 * s, 9.5 * s, 7.5 * s, 0, Math.PI, 0); g.fill(); }
+  if (o.gun) { g.lineWidth = 4 * s; g.beginPath(); g.moveTo(hand[0], hand[1]); g.lineTo(hand[0] + 14 * s * face, hand[1] - 1 * s); g.stroke(); hand = [hand[0] + 15 * s * face, hand[1] - 1 * s]; }
+  if (o.rim) { g.strokeStyle = o.rim; g.lineWidth = 1.6 * s; g.globalAlpha = .6; g.beginPath(); g.arc(hx2, hy2, 11 * s, -1.2 - (face < 0 ? 1.6 : 0), .2 - (face < 0 ? 1.6 : 0)); g.stroke(); }
+  g.restore(); return hand;
+}
+function carSil(g, x, y, s, o = {}) {
+  g.save(); g.translate(x, y); g.rotate(o.tilt || 0); g.scale(s * (o.flip ? -1 : 1), s);
+  if (o.lights) { const lg = g.createLinearGradient(62, -20, 330, -14); lg.addColorStop(0, "rgba(255,236,190,.42)"); lg.addColorStop(1, "rgba(255,236,190,0)"); g.fillStyle = lg; g.beginPath(); g.moveTo(60, -24); g.lineTo(340, -70); g.lineTo(340, 24); g.closePath(); g.fill(); }
+  g.fillStyle = o.c || "#040507";
+  g.beginPath(); g.moveTo(-66, -12); g.lineTo(-64, -30); g.quadraticCurveTo(-42, -35, -28, -35); g.lineTo(-15, -54); g.quadraticCurveTo(10, -58, 27, -52); g.lineTo(42, -35); g.quadraticCurveTo(62, -33, 66, -24); g.lineTo(66, -12); g.closePath(); g.fill();
+  g.fillStyle = "rgba(170,190,210,.2)"; g.beginPath(); g.moveTo(-11, -50); g.lineTo(23, -49); g.lineTo(34, -36); g.lineTo(-21, -36); g.closePath(); g.fill();
+  [-39, 41].forEach(wx => { g.fillStyle = "#010102"; g.beginPath(); g.arc(wx, -10, 11.5, 0, Math.PI * 2); g.fill(); g.fillStyle = "rgba(150,150,150,.45)"; g.beginPath(); g.arc(wx, -10, 4, 0, Math.PI * 2); g.fill(); });
+  g.fillStyle = "#E0453A"; g.fillRect(-67, -27, 4, 6); if (o.lights) { g.fillStyle = "#FFF1C8"; g.fillRect(63, -27, 4, 6); }
+  g.restore();
+}
+function strip(g, W, list, total, off, draw) { let o = -(((off % total) + total) % total); while (o < W) { let x = o; for (const it of list) { if (x > W) break; if (x + it.w > 0) draw(x, it); x += it.w; } o += total; } }
+function boomFx(g, ex, now, s) { for (const e of ex) { const a = now - e.t0; if (a < 0 || a > 2.4) continue; const r = e.sz * s * (a < .12 ? a / .12 : 1);
+  if (a < .7) { const fg = g.createRadialGradient(e.x, e.y, 0, e.x, e.y, r); fg.addColorStop(0, `rgba(255,236,170,${(1 - a / .7).toFixed(3)})`); fg.addColorStop(.4, `rgba(240,120,40,${(.85 * (1 - a / .7)).toFixed(3)})`); fg.addColorStop(1, "rgba(120,40,10,0)"); g.fillStyle = fg; g.beginPath(); g.arc(e.x, e.y, r, 0, Math.PI * 2); g.fill(); }
+  g.fillStyle = `rgba(30,26,24,${(.7 * (1 - a / 2.4)).toFixed(3)})`; for (let k = 0; k < 5; k++) { g.beginPath(); g.arc(e.x + (k - 2) * r * .3, e.y - a * 60 * s - k % 2 * r * .2, r * (.4 + a * .3), 0, Math.PI * 2); g.fill(); } } }
+function rainFx(g, W, H, t, s, n = 120) { g.strokeStyle = "rgba(180,195,215,.28)"; g.lineWidth = 1.2 * s; g.beginPath(); for (let i = 0; i < n; i++) { const x = (i * 97.3 + t * 260 * s) % (W + 60) - 30, y = (i * 53.7 + t * 1300 * s) % H; g.moveTo(x, y); g.lineTo(x - 5 * s, y + 18 * s); } g.stroke(); }
+function vign(g, W, H, col, k) { const v = g.createRadialGradient(W / 2, H / 2, Math.min(W, H) * .25, W / 2, H / 2, Math.max(W, H) * .72); v.addColorStop(0, "rgba(0,0,0,0)"); v.addColorStop(1, col.replace("A", k.toFixed(3))); g.fillStyle = v; g.fillRect(0, 0, W, H); }
+const AR = {};
+AR.road = (g, W, H, t, sh, st, A) => {
+  const s = Math.min(H, W * .78) / 560, P = sh.place, sp = P === "dock" ? Math.max(0, 1 - t / (sh.d * .8)) : 1;
+  A.x = (A.x || 0) + sp * st.dt * W * 1.1; const X = A.x, hz = H * .56, ry = H * .66, rb = H * .93, lanes = [H * .76, H * .87];
+  const sky = { city: ["#04060A", "#1B2230"], country: ["#05070A", "#1F2733"], coast: ["#03050A", "#15202D"], dock: ["#05070A", "#1F2733"] }[P];
+  let gr = g.createLinearGradient(0, 0, 0, ry); gr.addColorStop(0, sky[0]); gr.addColorStop(1, sky[1]); g.fillStyle = gr; g.fillRect(0, 0, W, ry);
+  const C = A.cache[P] || (A.cache[P] = (() => { const r = rng(P.length * 131 + 7), far = [], mid = []; let fw = 0, mw = 0;
+    for (let i = 0; i < 18; i++) { const w = (40 + r() * 90) * s; far.push({ w, h: (40 + r() * 140) * s, l: Array.from({ length: 6 }, () => r() < .3) }); fw += w; }
+    for (let i = 0; i < 10; i++) { const w = (90 + r() * 160) * s; mid.push({ w, h: (30 + r() * 60) * s, k: r() }); mw += w; } return { far, fw, mid, mw }; })());
+  if (P === "city" || P === "dock") strip(g, W, C.far, C.fw, X * .12, (x, it) => { g.fillStyle = "#0A0E15"; g.fillRect(x, ry - it.h, it.w - 3 * s, it.h); it.l.forEach((on, k) => { if (on) { g.fillStyle = "rgba(240,200,130,.55)"; g.fillRect(x + 8 * s + (k % 3) * 14 * s, ry - it.h + 12 * s + Math.floor(k / 3) * 22 * s, 6 * s, 8 * s); } }); });
+  if (P === "country") { g.fillStyle = "#0B0F14"; g.beginPath(); g.moveTo(0, ry); for (let x = 0; x <= W; x += 8) g.lineTo(x, hz - H * .02 - Math.sin((x + X * .06) / W * 5) * H * .035 - Math.sin((x + X * .06) / W * 13) * H * .012); g.lineTo(W, ry); g.fill();
+    strip(g, W, C.mid, C.mw, X * .45, (x, it) => { g.fillStyle = "#06080B"; g.fillRect(x + it.w * .5, ry - it.h * .7, 4 * s, it.h * .7); g.beginPath(); g.ellipse(x + it.w * .5, ry - it.h * .8, it.h * .45, it.h * .55, 0, 0, Math.PI * 2); g.fill(); }); }
+  if (P === "coast") { g.fillStyle = "#0B1622"; g.fillRect(0, hz, W, ry - hz); g.fillStyle = "#E8E2C8"; g.beginPath(); g.arc(W * .8, H * .16, 16 * s, 0, Math.PI * 2); g.fill();
+    g.strokeStyle = "rgba(232,226,200,.25)"; g.lineWidth = 2 * s; for (let i = 0; i < 6; i++) { const y = hz + 6 * s + i * 7 * s, w = (20 + i * 10) * s; g.beginPath(); g.moveTo(W * .8 - w + Math.sin(t * 2 + i) * 4 * s, y); g.lineTo(W * .8 + w, y); g.stroke(); }
+    strip(g, W, C.mid, C.mw, X * .5, (x, it) => { if (it.k < .5) return; g.strokeStyle = "#05070A"; g.lineWidth = 5 * s; g.beginPath(); g.moveTo(x, ry); g.quadraticCurveTo(x + 10 * s, ry - it.h, x + 6 * s, ry - it.h * 1.6); g.stroke(); g.fillStyle = "#05070A"; for (let k = 0; k < 5; k++) { g.beginPath(); g.ellipse(x + 6 * s + Math.cos(k * 1.3) * 18 * s, ry - it.h * 1.6 + Math.sin(k * 1.3) * 6 * s, 20 * s, 4 * s, k * 1.3, 0, Math.PI * 2); g.fill(); } }); }
+  if (P === "dock") { const fx = W * .62; g.fillStyle = "#06080B"; g.beginPath(); g.moveTo(fx, ry - 6 * s); g.lineTo(fx + W * .5, ry - 6 * s); g.lineTo(fx + W * .5, ry - 70 * s); g.lineTo(fx + 30 * s, ry - 60 * s); g.closePath(); g.fill(); g.fillRect(fx + 90 * s, ry - 110 * s, 80 * s, 50 * s); g.fillRect(fx + 120 * s, ry - 150 * s, 18 * s, 40 * s);
+    g.fillStyle = "rgba(255,226,170,.8)"; for (let k = 0; k < 9; k++) g.fillRect(fx + 50 * s + k * 26 * s, ry - 44 * s, 5 * s, 5 * s); }
+  g.fillStyle = "#101318"; g.fillRect(0, ry, W, rb - ry); g.fillStyle = "#07090C"; g.fillRect(0, rb, W, H - rb);
+  g.fillStyle = "rgba(233,225,207,.5)"; const dash = 120 * s, off = (X * 1.6) % dash; for (let x = -off; x < W; x += dash) g.fillRect(x, (lanes[0] + lanes[1]) / 2 - 4 * s, 60 * s, 4 * s);
+  g.fillRect(0, ry + 4 * s, W, 2 * s);
+  const lp = 360 * s, lo = (X * 1.6) % lp; for (let x = -lo; x < W + 40; x += lp) { g.fillStyle = "#06080A"; g.fillRect(x, ry - 120 * s, 4 * s, 124 * s); const lg = g.createRadialGradient(x, ry - 120 * s, 1, x, ry - 120 * s, 70 * s); lg.addColorStop(0, "rgba(255,224,160,.5)"); lg.addColorStop(1, "rgba(255,224,160,0)"); g.fillStyle = lg; g.fillRect(x - 70 * s, ry - 190 * s, 140 * s, 140 * s); }
+  if (sp > .2) { g.strokeStyle = "rgba(233,225,207,.12)"; g.lineWidth = 2 * s; for (let k = 0; k < 10; k++) { const y = ry + ((k * 37) % 100) / 100 * (rb - ry), x = W - ((t * 1800 * s + k * 211) % (W * 1.4)); g.beginPath(); g.moveTo(x, y); g.lineTo(x + 120 * s, y); g.stroke(); } }
+  const hx = W * .52, q = st.q; let hy = lanes[A.lane];
+  if (st.lc != null) { const k = Math.min(1, (t - st.lc) / .35), e = k * k * (3 - 2 * k); hy = lanes[st.from] + (lanes[A.lane] - lanes[st.from]) * e; }
+  if (q) { const pr = Math.min(1, ((q.live ? t : q.rt) - q.t0) / q.win), tx = hx + 118 * s, sx0 = W + 160 * s; let ox = sx0 - pr * (sx0 - tx); if (q.done && q.ok) ox -= (t - q.rt) * W * .9;
+    const oy = lanes[q.lane]; g.save(); g.translate(ox, oy);
+    if (sh.ob === "barrier") { g.fillStyle = "#0A0B0E"; g.fillRect(-4 * s, -70 * s, 8 * s, 70 * s); for (let k = 0; k < 7; k++) { g.fillStyle = k % 2 ? "#E9E1CF" : "#B3261E"; g.fillRect(-4 * s - k * 22 * s, -56 * s, 22 * s, 8 * s); } }
+    else if (sh.ob === "tram") { g.fillStyle = "#0A0C10"; g.fillRect(-20 * s, -96 * s, 300 * s, 92 * s); g.fillStyle = "rgba(240,210,150,.6)"; for (let k = 0; k < 7; k++) g.fillRect(-6 * s + k * 40 * s, -82 * s, 26 * s, 26 * s); g.strokeStyle = "#0A0C10"; g.lineWidth = 2 * s; g.beginPath(); g.moveTo(100 * s, -96 * s); g.lineTo(130 * s, -150 * s); g.stroke(); }
+    else { g.fillStyle = "#08090C"; g.fillRect(-10 * s, -80 * s, 150 * s, 70 * s); g.fillRect(140 * s, -56 * s, 46 * s, 46 * s); [10, 110, 160].forEach(w => { g.fillStyle = "#010102"; g.beginPath(); g.arc(w * s, -10 * s, 12 * s, 0, Math.PI * 2); g.fill(); }); g.fillStyle = "#E0453A"; g.fillRect(-12 * s, -30 * s, 5 * s, 8 * s); }
+    g.restore(); }
+  const crash = q && q.done && !q.ok ? Math.min(1, (t - q.rt) / .3) : 0;
+  if (sh.chase) { const cx = W * .16 + Math.sin(t * 1.3) * W * .015, cyy = lanes[A.lane] + Math.sin(t * 2.1) * 3 * s; carSil(g, cx, cyy, s * 1.1, { lights: true });
+    if (sh.gun && t > (st.ns || .3)) { st.ns = t + .35 + Math.random() * .55; st.fl = t; st.ft = [hx - 40 * s + Math.random() * 90 * s, hy - 50 * s + Math.random() * 30 * s]; Music.sfx("shot"); }
+    if (st.fl && t - st.fl < .09) { const mx = cx + 40 * s, my = cyy - 46 * s; const mf = g.createRadialGradient(mx, my, 0, mx, my, 26 * s); mf.addColorStop(0, "rgba(255,240,190,1)"); mf.addColorStop(1, "rgba(255,160,60,0)"); g.fillStyle = mf; g.fillRect(mx - 26 * s, my - 26 * s, 52 * s, 52 * s);
+      g.strokeStyle = "rgba(255,220,150,.8)"; g.lineWidth = 2 * s; g.beginPath(); g.moveTo(mx, my); g.lineTo(st.ft[0], st.ft[1]); g.stroke(); g.fillStyle = "#FFE7A8"; for (let k = 0; k < 6; k++) g.fillRect(st.ft[0] + (Math.random() - .5) * 20 * s, st.ft[1] + (Math.random() - .5) * 20 * s, 3 * s, 3 * s); } }
+  carSil(g, hx, hy + Math.sin(t * 22) * 1.4 * s, s * 1.15, { lights: true, c: "#0A0B0E", tilt: crash ? -.08 * crash : st.lc != null && t - st.lc < .35 ? (A.lane === 0 ? -.05 : .05) : 0 });
+  if (crash) { st.shake = Math.max(st.shake || 0, crash < 1 ? 1 : 0); g.fillStyle = "#FFE7A8"; for (let k = 0; k < 14; k++) g.fillRect(hx + 70 * s + Math.random() * 40 * s, hy - 40 * s + Math.random() * 40 * s, 3 * s, 3 * s); }
+  if (sh.rain) rainFx(g, W, H, t, s);
+  if (sh.clock) { g.fillStyle = "rgba(233,225,207,.9)"; g.font = `${Math.round(30 * s)}px "Special Elite", monospace`; g.textAlign = "right"; g.fillText(sh.clock, W - 24 * s, H * .14); g.textAlign = "left"; }
+  vign(g, W, H, "rgba(0,0,0,A)", .55);
+};
+AR.shell = (g, W, H, t, sh, st, A) => {
+  const s = Math.min(H, W * .78) / 560, gy = H * .82; let gr = g.createLinearGradient(0, 0, 0, gy); gr.addColorStop(0, "#2A2620"); gr.addColorStop(1, "#7A6046"); g.fillStyle = gr; g.fillRect(0, 0, W, gy);
+  g.fillStyle = "#17130F"; [[.05, .2, .22], [.22, .12, .3], [.72, .16, .26], [.86, .1, .34]].forEach(([x, w, h]) => { g.beginPath(); g.moveTo(W * x, gy); g.lineTo(W * x, gy - H * h); g.lineTo(W * (x + w * .3), gy - H * h * .7); g.lineTo(W * (x + w * .55), gy - H * h * .95); g.lineTo(W * (x + w), gy - H * h * .5); g.lineTo(W * (x + w), gy); g.fill(); });
+  g.fillStyle = "#211B15"; g.fillRect(0, gy, W, H - gy);
+  if (!st.b1 && t > .5 && !st.q) { st.b1 = 1; A.ex.push({ x: W * .9, y: gy - 10 * s, t0: A.T, sz: 70 }); Music.sfx("boom"); }
+  if (!st.b2 && t > 1.9 && !st.q) { st.b2 = 1; A.ex.push({ x: W * .1, y: gy - 6 * s, t0: A.T, sz: 60 }); Music.sfx("boom"); }
+  const q = st.q, hit = q && q.done; if (hit && !st.big) { st.big = 1; A.ex.push({ x: W * .6, y: gy - 20 * s, t0: A.T, sz: 170 }); Music.sfx("boom"); st.shake = 1; if (!q.ok) Music.sfx("ring"); }
+  carSil(g, W * .44, gy, s * 1.3, { c: "#0B0A09" });
+  const ok = hit && q.ok; [[.3, "stand"], [.56, ok ? "down" : "stand"], [.63, "stand"], [.7, "read"]].forEach(([x, p], k) => fig(g, W * x, gy, s * 1.05, k === 1 ? -1 : 1, hit && k !== 1 && t - q.rt > .25 ? "down" : p, { hat: k !== 1, c: "#0B0A09" }));
+  boomFx(g, A.ex, A.T, s);
+  if (q && q.live) { g.strokeStyle = "rgba(255,240,200,.6)"; g.lineWidth = 2 * s; const k = (t - q.t0) / q.win; g.beginPath(); g.moveTo(W * .2 + k * W * .4, H * .05 + k * (gy - H * .1)); g.lineTo(W * .19 + k * W * .4, H * .02 + k * (gy - H * .1)); g.stroke(); }
+  if (hit && !q.ok) { const a = Math.max(0, 1 - (t - q.rt) / 1.4); g.fillStyle = `rgba(255,250,235,${a.toFixed(3)})`; g.fillRect(0, 0, W, H); }
+  vign(g, W, H, "rgba(20,10,0,A)", .6);
+};
+AR.fight = (g, W, H, t, sh, st, A) => {
+  const s = Math.min(H, W * .78) / 470, gy = H * .86, P = sh.place;
+  if (P === "room") { g.fillStyle = "#14161B"; g.fillRect(0, 0, W, H); g.fillStyle = "#2B3340"; g.fillRect(W * .64, H * .16, W * .16, H * .36); g.strokeStyle = "#14161B"; g.lineWidth = 6 * s; g.beginPath(); g.moveTo(W * .72, H * .16); g.lineTo(W * .72, H * .52); g.moveTo(W * .64, H * .34); g.lineTo(W * .8, H * .34); g.stroke();
+    const lg = g.createRadialGradient(W * .72, H * .4, 4, W * .62, gy, W * .55); lg.addColorStop(0, "rgba(180,200,225,.35)"); lg.addColorStop(1, "rgba(180,200,225,0)"); g.fillStyle = lg; g.fillRect(0, 0, W, H); g.fillStyle = "#0E1014"; g.fillRect(W * .12, H * .22, W * .12, gy - H * .22); }
+  else { let gr = g.createLinearGradient(0, 0, 0, gy); gr.addColorStop(0, "#05070B"); gr.addColorStop(1, "#1A2330"); g.fillStyle = gr; g.fillRect(0, 0, W, gy); g.strokeStyle = "#0B0F15"; g.lineWidth = 10 * s; g.beginPath(); g.moveTo(W * .82, gy); g.lineTo(W * .82, H * .1); g.lineTo(W * .45, H * .16); g.stroke(); g.lineWidth = 2 * s; g.beginPath(); g.moveTo(W * .52, H * .15); g.lineTo(W * .52, H * .4); g.stroke();
+    g.fillStyle = "#0B0E13"; g.fillRect(W * .02, gy - 70 * s, 120 * s, 70 * s); g.fillRect(W * .02 + 20 * s, gy - 130 * s, 90 * s, 60 * s); const lg = g.createRadialGradient(W * .5, H * .3, 4, W * .5, H * .5, W * .5); lg.addColorStop(0, "rgba(240,200,130,.28)"); lg.addColorStop(1, "rgba(240,200,130,0)"); g.fillStyle = lg; g.fillRect(0, 0, W, H); }
+  g.fillStyle = "#08090C"; g.fillRect(0, gy, W, H - gy);
+  const q = st.q, done = q && q.done, ok = done && q.ok, ph = Math.floor(t / .32) % 2, foes = sh.foes || 2;
+  const fx0 = Math.max(W * .55, W * .82 - A.T * W * .25); let hp = "stand", fp = "stand", hx = W * .4;
+  if (!q) { if (t > 1.1) { hp = ph ? "block" : "hit"; fp = ph ? "punch" : "grab"; if (!st.ps || t - st.ps > .64) { st.ps = t; Music.sfx("punch"); st.shake = .4; } } }
+  else if (q.type === "mash") { hp = q.done ? (ok ? "punch" : "down") : ((q.c || 0) % 2 ? "strain" : "grab"); fp = q.done ? (ok ? "down" : "stand") : "grab"; }
+  else { hp = q.done ? (ok ? "punch" : "hit") : "block"; fp = q.done ? (ok ? "down" : "punch") : (t - q.t0 > q.win * .5 ? "punch" : "grab"); if (q.done && ok) hx = W * .37; }
+  fig(g, hx, gy, s, 1, hp, { rim: "rgba(240,210,150,.8)" });
+  fig(g, fx0, gy, s * 1.04, -1, fp, { hat: P === "room" });
+  if (foes > 1) fig(g, fx0 + W * .12, gy, s, -1, done && ok ? "stand" : "grab", { hat: P === "room" });
+  if (done && t - q.rt < .1) { g.fillStyle = "rgba(255,255,255,.75)"; g.fillRect(0, 0, W, H); }
+  if (P === "dock") rainFx(g, W, H, t, s, 80);
+  vign(g, W, H, "rgba(0,0,0,A)", .6);
+};
+AR.gun = (g, W, H, t, sh, st, A) => {
+  const s = Math.min(H, W * .78) / 520, gy = H * .84, P = sh.place;
+  if (P === "tunnel") { g.fillStyle = "#121315"; g.fillRect(0, 0, W, H); const cx = W * .5, cy = H * .46; for (let k = 0; k < 9; k++) { const r = W * .7 * Math.pow(.74, k); g.fillStyle = k % 2 ? "#1E2024" : "#25282D"; g.beginPath(); g.arc(cx, cy, r, 0, Math.PI * 2); g.fill(); }
+    const lp = g.createRadialGradient(cx, cy, 2, cx, cy, W * .1); lp.addColorStop(0, "rgba(255,250,230,.9)"); lp.addColorStop(1, "rgba(255,250,230,0)"); g.fillStyle = lp; g.fillRect(0, 0, W, H); g.fillStyle = "#0B0C0E"; g.fillRect(0, gy, W, H - gy); }
+  else { let gr = g.createLinearGradient(0, 0, 0, gy); gr.addColorStop(0, "#04060A"); gr.addColorStop(1, sh.snow ? "#2A3442" : "#18202B"); g.fillStyle = gr; g.fillRect(0, 0, W, H); g.fillStyle = "#E8E2C8"; g.beginPath(); g.arc(W * .18, H * .14, 14 * s, 0, Math.PI * 2); g.fill();
+    g.fillStyle = sh.snow ? "#3B4554" : "#0A0D12"; g.beginPath(); g.moveTo(0, gy); g.lineTo(W * .1, H * .5); g.lineTo(W * .28, H * .62); g.lineTo(W * .5, H * .38); g.lineTo(W * .72, H * .55); g.lineTo(W * .9, H * .42); g.lineTo(W, H * .5); g.lineTo(W, H); g.lineTo(0, H); g.fill(); g.fillStyle = "#06080B"; g.fillRect(0, gy, W, H - gy); }
+  if (sh.para) for (let k = 0; k < 5; k++) { const x = W * (.25 + k * .13) + Math.sin(t + k) * 10 * s, y = -H * .15 + ((t + k * .5) / (sh.d + 1)) * H * .75; g.fillStyle = "rgba(210,210,200,.75)"; g.beginPath(); g.arc(x, y, 26 * s, Math.PI, 0); g.fill(); g.strokeStyle = "rgba(210,210,200,.5)"; g.lineWidth = 1 * s; g.beginPath(); g.moveTo(x - 26 * s, y); g.lineTo(x, y + 36 * s); g.lineTo(x + 26 * s, y); g.stroke(); fig(g, x, y + 66 * s, s * .45, 1, "stand"); }
+  if (sh.snow) { g.fillStyle = "rgba(225,232,240,.55)"; for (let k = 0; k < 90; k++) { const r1 = Math.abs(Math.sin(k * 12.9898) * 43758.5453) % 1, r2 = Math.abs(Math.sin(k * 78.233) * 12543.31) % 1, x = (r1 * W + t * 30 * s + Math.sin(t + k) * 8 * s) % W, y = (r2 * H + t * (40 + r1 * 40) * s) % H; g.fillRect(x, y, (1.5 + r2 * 1.5) * s, (1.5 + r2 * 1.5) * s); } g.fillStyle = "#1E242D"; g.fillRect(0, gy, W, H - gy); }
+  if (sh.walk) for (let k = 0; k < sh.walk; k++) fig(g, W * (.05 + k * .09) + t * W * .05, gy, s * .7, 1, (Math.floor(t * 3) + k) % 2 ? "walk1" : "walk2", { hat: true });
+  if (sh.ambush) { const bl = g.createLinearGradient(0, gy - 120 * s, 0, gy); bl.addColorStop(0, "rgba(120,140,170,0)"); bl.addColorStop(1, "rgba(120,140,170,.18)"); g.fillStyle = bl; g.fillRect(0, gy - 120 * s, W, 120 * s); for (let k = 0; k < (sh.n || 5); k++) fig(g, W * (.3 + k * .12), gy, s * .7, 1, t > .8 + k * .6 ? "down" : "stand", { hat: !!sh.snow });
+    if (!st.ns || t > st.ns) { st.ns = t + .12 + Math.random() * .25; st.fl = { x: W * (.1 + Math.random() * .85), y: H * (.42 + Math.random() * .16), t }; Music.sfx("shot"); }
+    if (st.fl && t - st.fl.t < .08) { g.strokeStyle = "rgba(255,220,150,.7)"; g.lineWidth = 1.5 * s; g.beginPath(); g.moveTo(st.fl.x, st.fl.y); g.lineTo(W * (.3 + Math.random() * .5), gy - Math.random() * 60 * s); g.stroke(); const mf = g.createRadialGradient(st.fl.x, st.fl.y, 0, st.fl.x, st.fl.y, 18 * s); mf.addColorStop(0, "rgba(255,240,190,1)"); mf.addColorStop(1, "rgba(255,160,60,0)"); g.fillStyle = mf; g.fillRect(st.fl.x - 18 * s, st.fl.y - 18 * s, 36 * s, 36 * s); } }
+  if (!sh.noHero) {
+    const q = st.q, foeX = [W * .7, W * .83], tgt = A.shotN || 0; A.down = A.down || [];
+    g.fillStyle = "#0E0F12"; foeX.forEach(x => g.fillRect(x - 20 * s, gy - 46 * s, 70 * s, 46 * s));
+    foeX.forEach((x, k) => { if (A.down[k]) { fig(g, x + 40 * s, gy, s, -1, "down"); return; } const up = (q && q.live && k === tgt) || Math.sin(t * 3 + k * 2) > .3; fig(g, x, up ? gy : gy + 34 * s, s, -1, up ? "aim" : "crouch", { gun: true }); if (q && q.live && k === tgt) { g.strokeStyle = "rgba(217,164,65,.9)"; g.lineWidth = 2 * s; g.beginPath(); g.arc(x, gy - 110 * s, 30 * s + Math.sin(t * 12) * 3 * s, 0, Math.PI * 2); g.stroke(); } });
+    if (!st.ns || t > st.ns) { st.ns = t + .4 + Math.random() * .5; st.fl = t; st.fk = Math.random() < .5 ? 0 : 1; if (!A.down[st.fk]) Music.sfx("shot"); }
+    if (st.fl && t - st.fl < .08 && !A.down[st.fk]) { const mx = foeX[st.fk] - 40 * s, my = gy - 92 * s, mf = g.createRadialGradient(mx, my, 0, mx, my, 22 * s); mf.addColorStop(0, "rgba(255,240,190,1)"); mf.addColorStop(1, "rgba(255,160,60,0)"); g.fillStyle = mf; g.fillRect(mx - 22 * s, my - 22 * s, 44 * s, 44 * s); g.fillStyle = "#FFE7A8"; for (let k = 0; k < 6; k++) g.fillRect(W * .26 + Math.random() * 40 * s, gy - 60 * s + Math.random() * 30 * s, 3 * s, 3 * s); }
+    g.fillStyle = "#16171A"; g.fillRect(W * .2, gy - 58 * s, 90 * s, 58 * s); g.strokeStyle = "#0B0C0E"; g.lineWidth = 3 * s; g.strokeRect(W * .2, gy - 58 * s, 90 * s, 58 * s);
+    const fire = q && q.done && q.ok && t - q.rt < .6, hand = fig(g, W * .17, gy, s, 1, fire ? "aim" : "crouch", { gun: true, rim: "rgba(240,210,150,.8)" });
+    if (fire && t - q.rt < .1) { const mf = g.createRadialGradient(hand[0], hand[1], 0, hand[0], hand[1], 26 * s); mf.addColorStop(0, "rgba(255,240,190,1)"); mf.addColorStop(1, "rgba(255,160,60,0)"); g.fillStyle = mf; g.fillRect(hand[0] - 26 * s, hand[1] - 26 * s, 52 * s, 52 * s); }
+    if (q && q.done && !st.mark) { st.mark = 1; if (q.ok) { A.down[tgt] = true; } A.shotN = tgt + 1; }
+    if (q && q.done && !q.ok) { const a = Math.max(0, .5 - (t - q.rt)); g.fillStyle = `rgba(160,20,20,${a.toFixed(3)})`; g.fillRect(0, 0, W, H); }
+  }
+  vign(g, W, H, "rgba(0,0,0,A)", .6);
+};
+AR.panel = (g, W, H, t, sh, st, A) => {
+  const s = Math.min(H, W * .78) / 520, gy = H * .8, z = 1 + (sh.z ? .1 * (t / sh.d) : 0); g.save(); g.translate(W / 2, H / 2); g.scale(z, z); g.translate(-W / 2, -H / 2);
+  let gr = g.createLinearGradient(0, 0, 0, gy); gr.addColorStop(0, "#04060A"); gr.addColorStop(1, "#1C2430"); g.fillStyle = gr; g.fillRect(0, 0, W, H); g.fillStyle = "#0B0D11"; g.fillRect(0, gy, W, H - gy);
+  for (let k = 0; k < 12; k++) { g.fillStyle = `rgba(240,200,130,${(.5 + .4 * Math.sin(t * 3 + k)).toFixed(3)})`; g.fillRect(k * W / 11, gy + 30 * s, 4 * s, 4 * s); }
+  const px = W * .62; g.fillStyle = "#06070A"; g.beginPath(); g.ellipse(px + 120 * s, gy - 70 * s, 220 * s, 34 * s, 0, 0, Math.PI * 2); g.fill(); g.beginPath(); g.moveTo(px + 300 * s, gy - 90 * s); g.lineTo(px + 340 * s, gy - 170 * s); g.lineTo(px + 360 * s, gy - 90 * s); g.fill();
+  g.fillRect(px + 60 * s, gy - 80 * s, 150 * s, 14 * s); g.lineWidth = 6 * s; g.strokeStyle = "#06070A"; [px + 40 * s, px + 220 * s].forEach(x => { g.beginPath(); g.moveTo(x, gy - 40 * s); g.lineTo(x, gy); g.stroke(); });
+  g.fillStyle = "rgba(255,226,170,.75)"; for (let k = 0; k < 6; k++) g.fillRect(px + 20 * s + k * 34 * s, gy - 78 * s, 8 * s, 6 * s);
+  g.strokeStyle = "#0E1014"; g.lineWidth = 4 * s; g.beginPath(); for (let k = 0; k < 6; k++) { g.moveTo(px - 30 * s + k * 12 * s, gy - k * 10 * s); g.lineTo(px - 18 * s + k * 12 * s, gy - k * 10 * s); } g.stroke();
+  const p = Math.min(1, t / (sh.d * 1.6) + (sh.z ? .45 : 0)), bx = W * .08 + p * W * .42;
+  [0, 1].forEach(k => { const x = bx - k * 150 * s; fig(g, x - 40 * s, gy, s * .9, 1, (Math.floor(t * 3) + k) % 2 ? "walk1" : "walk2", { hat: true }); fig(g, x + 40 * s, gy, s * .9, 1, (Math.floor(t * 3) + k + 1) % 2 ? "walk1" : "walk2", { hat: true });
+    g.fillStyle = "#06070A"; g.fillRect(x - 46 * s, gy - 66 * s, 92 * s, 6 * s); g.fillStyle = "rgba(225,222,212,.85)"; g.beginPath(); g.ellipse(x, gy - 72 * s, 38 * s, 7 * s, 0, 0, Math.PI * 2); g.fill(); g.beginPath(); g.arc(x - 36 * s, gy - 74 * s, 6 * s, 0, Math.PI * 2); g.fill(); });
+  g.restore(); vign(g, W, H, "rgba(0,0,0,A)", .6);
+};
+AR.sneak = (g, W, H, t, sh, st, A) => {
+  const s = Math.min(H, W * .78) / 520, P = sh.place, gy = H * .88, wy = H * .74, wx = W * .58, L = A.lk || (A.lk = { st: "away", until: 1.2 });
+  if (A.T >= L.until) { if (L.st === "away") { L.st = "warn"; L.until = A.T + .55; } else if (L.st === "warn") { L.st = "look"; L.until = A.T + 1.1 + Math.random() * .7; } else { L.st = "away"; L.until = A.T + 1.0 + Math.random() * .9; } }
+  const look = L.st === "look", warn = L.st === "warn";
+  if (P === "street") { g.fillStyle = "#2A211B"; g.fillRect(0, 0, W, H); for (let y = 0; y < wy; y += 14 * s) for (let x = (y / (14 * s)) % 2 ? 0 : 20 * s; x < W; x += 40 * s) { g.fillStyle = "rgba(60,40,30,.25)"; g.fillRect(x, y, 38 * s, 12 * s); } g.fillStyle = "#0A0908"; g.fillRect(0, wy, W, H - wy); g.fillStyle = "#050505"; g.fillRect(wx + 30 * s, wy - 230 * s, 6 * s, 230 * s); const lg = g.createRadialGradient(wx + 33 * s, wy - 230 * s, 2, wx, wy, 220 * s); lg.addColorStop(0, "rgba(255,226,170,.5)"); lg.addColorStop(1, "rgba(255,226,170,0)"); g.fillStyle = lg; g.fillRect(0, 0, W, H); }
+  else if (P === "port") { let gr = g.createLinearGradient(0, 0, 0, wy); gr.addColorStop(0, "#03050A"); gr.addColorStop(1, "#141C26"); g.fillStyle = gr; g.fillRect(0, 0, W, H); g.fillStyle = "#06080B"; g.fillRect(W * .7, wy - 150 * s, W * .4, 150 * s); g.fillRect(W * .8, wy - 210 * s, 60 * s, 60 * s); g.fillStyle = "rgba(255,226,170,.75)"; for (let k = 0; k < 8; k++) g.fillRect(W * .72 + k * 30 * s, wy - 110 * s, 6 * s, 6 * s);
+    g.fillStyle = "rgba(240,240,230,.7)"; g.font = `${Math.round(13 * s)}px "Special Elite", monospace`; g.fillText("ДОЛМАТОВА", W * .74, wy - 60 * s); g.fillStyle = "#0A0C10"; g.fillRect(0, wy, W, H - wy); [W * .1, W * .3].forEach(x => g.fillRect(x, wy - 70 * s, 90 * s, 70 * s)); }
+  else { g.fillStyle = "#262931"; g.fillRect(0, 0, W, H); for (let k = 0; k < 5; k++) { g.fillStyle = "#0D0F13"; g.fillRect(k * W / 4.5 + 30 * s, wy - 170 * s, 70 * s, 170 * s); g.fillStyle = "rgba(200,200,190,.3)"; g.fillRect(k * W / 4.5 + 88 * s, wy - 90 * s, 5 * s, 5 * s); } g.fillStyle = "#0B0C0F"; g.fillRect(0, wy, W, H - wy); }
+  const face = look ? -1 : 1, seen = st.q && st.q.done && !st.q.ok;
+  if (P !== "street" || look || seen) { const tx = look || seen ? (A.hx || W * .1) : wx + 300 * s * face, ty = look || seen ? gy - 60 * s : wy - 40 * s; g.fillStyle = seen ? "rgba(255,240,200,.32)" : `rgba(255,240,200,${look ? .2 : warn ? .1 : .08})`; g.beginPath(); g.moveTo(wx + 14 * s * face, wy - 90 * s); g.lineTo(tx - 70 * s, ty - 50 * s); g.lineTo(tx + 70 * s, ty + 60 * s); g.closePath(); g.fill(); }
+  fig(g, wx, wy, s * .9, warn ? (Math.floor(A.T * 8) % 2 ? 1 : -1) : face, P === "street" && !look ? "read" : "stand", { hat: true });
+  if (P === "street" && !look) { g.fillStyle = "rgba(220,214,196,.8)"; g.fillRect(wx - 6 * s, wy - 118 * s, 32 * s * face, 40 * s); }
+  const n = (st.q && st.q.n) || 4, pos = A.pos || 0, from = A.from ?? pos, k = st.wt != null ? Math.min(1, (t - st.wt) / .6) : 1, hx = W * .08 + (from + (pos - from) * k) / n * W * .78; A.hx = hx;
+  const bl = g.createRadialGradient(hx, gy - 70 * s, 10 * s, hx, gy - 70 * s, 150 * s); bl.addColorStop(0, "rgba(205,195,170,.22)"); bl.addColorStop(1, "rgba(205,195,170,0)"); g.fillStyle = bl; g.fillRect(hx - 150 * s, gy - 220 * s, 300 * s, 300 * s);
+  fig(g, hx, gy, s * 1.1, 1, k < 1 ? (Math.floor(t * 6) % 2 ? "walk1" : "walk2") : "stand", { hat: true, rim: "rgba(240,210,150,.7)" });
+  if (P === "port") rainFx(g, W, H, t, s, 90);
+  const iv = look ? .55 : warn ? .7 : 1.0; if (!A.hbT || A.T - A.hbT > iv) { A.hbT = A.T; Music.sfx("heart"); }
+  const pulse = Math.max(0, 1 - (A.T - (A.hbT || 0)) / .4); vign(g, W, H, "rgba(140,10,10,A)", (look ? .45 : warn ? .3 : .15) + pulse * .15); vign(g, W, H, "rgba(0,0,0,A)", .5);
+  st.look = look; st.warn = warn;
+};
+AR.dial = (g, W, H, t, sh, st, A) => {
+  const s = Math.min(H, W * .78) / 520, cx = W / 2, cy = H * .48, R = 150 * s; g.fillStyle = "#1A1C20"; g.fillRect(0, 0, W, H); g.fillStyle = "#24272C"; g.fillRect(cx - 260 * s, cy - 220 * s, 520 * s, 440 * s);
+  const lg = g.createRadialGradient(cx - 80 * s, cy - 140 * s, 4, cx, cy, 420 * s); lg.addColorStop(0, "rgba(255,240,200,.25)"); lg.addColorStop(1, "rgba(255,240,200,0)"); g.fillStyle = lg; g.fillRect(0, 0, W, H);
+  const D = st.dl || (st.dl = { a: 0, dir: 1, tg: 1 + Math.random() * 5, got: [] }); D.a += D.dir * st.dt * 1.5;
+  g.save(); g.translate(cx, cy); g.rotate(D.a); g.fillStyle = "#0E0F12"; g.beginPath(); g.arc(0, 0, R, 0, Math.PI * 2); g.fill(); g.strokeStyle = "#7A7A72"; g.lineWidth = 2 * s;
+  for (let k = 0; k < 100; k++) { const a = k / 100 * Math.PI * 2, l = k % 10 ? 8 : 16; g.beginPath(); g.moveTo(Math.sin(a) * (R - 4 * s), -Math.cos(a) * (R - 4 * s)); g.lineTo(Math.sin(a) * (R - 4 * s - l * s), -Math.cos(a) * (R - 4 * s - l * s)); g.stroke(); }
+  g.strokeStyle = "#D9A441"; g.lineWidth = 6 * s; g.beginPath(); g.moveTo(Math.sin(D.tg) * (R - 6 * s), -Math.cos(D.tg) * (R - 6 * s)); g.lineTo(Math.sin(D.tg) * (R - 34 * s), -Math.cos(D.tg) * (R - 34 * s)); g.stroke();
+  g.fillStyle = "#2E3036"; g.beginPath(); g.arc(0, 0, R * .4, 0, Math.PI * 2); g.fill(); g.restore();
+  g.fillStyle = "#E9E1CF"; g.beginPath(); g.moveTo(cx - 10 * s, cy - R - 20 * s); g.lineTo(cx + 10 * s, cy - R - 20 * s); g.lineTo(cx, cy - R - 2 * s); g.fill();
+  const code = [0, 1, 2].map(k => D.got[k] != null ? String(D.got[k]).padStart(2, "0") : "__").join(" - "); g.font = `${Math.round(26 * s)}px "Special Elite", monospace`; g.textAlign = "center"; g.fillText(code, cx, cy + R + 50 * s); g.textAlign = "left";
+  st.dialOff = (() => { let d = (D.a + D.tg) % (Math.PI * 2); if (d < 0) d += Math.PI * 2; return Math.min(d, Math.PI * 2 - d); })();
+  vign(g, W, H, "rgba(0,0,0,A)", .6);
+};
+AR.news = (g, W, H, t, sh, st, A) => {
+  const s = Math.min(H, W * .78) / 560, cx = W / 2, cy = H * .6, ph = Math.min(H * .56, W * .9), pw = ph * .78;
+  g.fillStyle = "#0B0C0F"; g.fillRect(0, 0, W, H); const lg = g.createRadialGradient(cx, cy, 10, cx, cy, Math.max(W, H) * .6); lg.addColorStop(0, "rgba(233,225,207,.16)"); lg.addColorStop(1, "rgba(233,225,207,0)"); g.fillStyle = lg; g.fillRect(0, 0, W, H);
+  const idx = A.shots.indexOf(sh), font = '"PingFang SC","Microsoft YaHei","Noto Serif SC",serif';
+  const wrap = (txt, x, y, maxW, lh) => { let line = "", yy = y; for (const ch of txt) { if (g.measureText(line + ch).width > maxW && line) { g.fillText(line, x, yy); line = ch; yy += lh; } else line += ch; } g.fillText(line, x, yy); return yy; };
+  const page = (p, rot, sc, dim) => {
+    g.save(); g.translate(cx, cy); g.rotate(rot); g.scale(sc, sc); g.shadowColor = "rgba(0,0,0,.6)"; g.shadowBlur = 30 * s; g.shadowOffsetY = 10 * s;
+    if (p.kind === "award") {
+      g.fillStyle = "#EDE4CC"; g.fillRect(-pw / 2, -ph / 2, pw, ph); g.shadowColor = "transparent";
+      g.strokeStyle = "#8E6A22"; g.lineWidth = 3 * s; g.strokeRect(-pw / 2 + 14 * s, -ph / 2 + 14 * s, pw - 28 * s, ph - 28 * s); g.lineWidth = 1 * s; g.strokeRect(-pw / 2 + 22 * s, -ph / 2 + 22 * s, pw - 44 * s, ph - 44 * s);
+      g.fillStyle = "#8E6A22"; g.beginPath(); g.arc(0, -ph / 2 + pw * .17, pw * .07, 0, Math.PI * 2); g.fill(); g.fillStyle = "#EDE4CC"; g.beginPath(); g.arc(0, -ph / 2 + pw * .17, pw * .05, 0, Math.PI * 2); g.fill(); g.fillStyle = "#8E6A22"; g.font = `700 ${Math.round(pw * .05)}px serif`; g.textAlign = "center"; g.fillText("GR", 0, -ph / 2 + pw * .19);
+      g.fillStyle = "#24201A"; g.font = `900 ${Math.round(pw * .085)}px ${font}`; g.fillText(p.head, 0, -ph / 2 + pw * .37);
+      g.font = `${Math.round(pw * .05)}px ${font}`; g.fillStyle = "#6B5A3A"; g.fillText(p.sub || "", 0, -ph / 2 + pw * .46);
+      g.fillStyle = "#24201A"; g.font = `${Math.round(pw * .05)}px "Special Elite", ${font}`; (p.lines || []).forEach((l, k) => g.fillText(l, 0, -ph / 2 + pw * .6 + k * pw * .075));
+      g.strokeStyle = "#24201A"; g.lineWidth = 1.5 * s; g.beginPath(); g.moveTo(pw * .05, ph / 2 - pw * .2); g.bezierCurveTo(pw * .12, ph / 2 - pw * .28, pw * .16, ph / 2 - pw * .14, pw * .24, ph / 2 - pw * .22); g.stroke();
+      if (p.medal) { g.save(); g.translate(-pw * .24, ph / 2 - pw * .3); g.rotate(-.12); g.fillStyle = "#C9707E"; g.fillRect(-pw * .05, -pw * .14, pw * .1, pw * .12); g.fillStyle = "#B8B8B8"; g.fillRect(-pw * .05, -pw * .14, pw * .015, pw * .12); g.fillRect(pw * .035, -pw * .14, pw * .015, pw * .12);
+        g.fillStyle = "#C9A24A"; g.beginPath(); for (let k = 0; k < 4; k++) { const a = k * Math.PI / 2; g.moveTo(0, pw * .05); g.lineTo(Math.cos(a - .3) * pw * .07, pw * .05 + Math.sin(a - .3) * pw * .07); g.lineTo(Math.cos(a + .3) * pw * .07, pw * .05 + Math.sin(a + .3) * pw * .07); } g.fill(); g.fillStyle = "#8E6A22"; g.beginPath(); g.arc(0, pw * .05, pw * .022, 0, Math.PI * 2); g.fill(); g.restore(); }
+    } else if (p.kind === "file") {
+      g.fillStyle = "#B9955A"; g.fillRect(-pw / 2, -ph / 2, pw, ph); g.fillRect(-pw / 2, -ph / 2 - 22 * s, pw * .38, 24 * s); g.shadowColor = "transparent";
+      g.fillStyle = "#EFE7D4"; g.fillRect(-pw / 2 + 18 * s, -ph / 2 + 18 * s, pw - 36 * s, ph - 36 * s);
+      g.fillStyle = "#24201A"; g.textAlign = "left"; g.font = `700 ${Math.round(pw * .075)}px ${font}`; g.fillText(p.head, -pw / 2 + 40 * s, -ph / 2 + 70 * s);
+      g.font = `${Math.round(pw * .052)}px "Special Elite", ${font}`; (p.lines || []).forEach((l, k) => g.fillText(l, -pw / 2 + 40 * s, -ph / 2 + 130 * s + k * pw * .09));
+      g.save(); g.translate(pw * .2, ph * .3); g.rotate(-.18); g.strokeStyle = "#B3261E"; g.lineWidth = 4 * s; g.strokeRect(-70 * s, -26 * s, 140 * s, 52 * s); g.fillStyle = "#B3261E"; g.textAlign = "center"; g.font = `700 ${Math.round(28 * s)}px ${font}`; g.fillText("绝 密", 0, 10 * s); g.restore();
+      g.fillStyle = "#8C8C88"; g.fillRect(-pw / 2 + 30 * s, -ph / 2 + 4 * s, 10 * s, 46 * s);
+    } else {
+      g.fillStyle = "#E6DCC6"; g.fillRect(-pw / 2, -ph / 2, pw, ph); g.shadowColor = "transparent";
+      const x0 = -pw / 2 + 20 * s, x1 = pw / 2 - 20 * s; g.fillStyle = "#1E1A15"; g.textAlign = "center";
+      g.font = `700 ${Math.round(pw * .085)}px "Playfair Display","Times New Roman",serif`; g.fillText("THE LONDON PRESS", 0, -ph / 2 + pw * .12);
+      g.fillRect(x0, -ph / 2 + pw * .15, x1 - x0, 2 * s); g.fillRect(x0, -ph / 2 + pw * .2, x1 - x0, 1 * s);
+      g.font = `${Math.round(pw * .036)}px ${font}`; g.fillText(p.date || "", 0, -ph / 2 + pw * .185);
+      g.font = `900 ${Math.round(pw * .088)}px ${font}`; let y = wrap(p.head, 0, -ph / 2 + pw * .33, x1 - x0, pw * .12);
+      g.font = `${Math.round(pw * .045)}px ${font}`; g.fillStyle = "#4A4238"; y = wrap(p.sub || "", 0, y + pw * .075, x1 - x0, pw * .06);
+      const by = y + pw * .05, bh = ph / 2 - by - 24 * s;
+      if (p.photo) { const bw = (x1 - x0) * .55; g.fillStyle = "#9C9486"; g.fillRect(x0, by, bw, bh * .8); g.fillStyle = "#4B463E"; for (let k = 0; k < p.photo; k++) { const hx = x0 + bw * (p.photo === 1 ? .5 : .32 + k * .36); g.beginPath(); g.arc(hx, by + bh * .32, bw * .1, 0, Math.PI * 2); g.fill(); g.beginPath(); g.ellipse(hx, by + bh * .8, bw * .2, bh * .32, 0, Math.PI, 0); g.fill(); }
+        g.fillStyle = "#B4AC9C"; for (let k = 0; k < 7; k++) g.fillRect(x0 + bw + 12 * s, by + k * bh * .12, (x1 - x0 - bw - 12 * s) * (k % 3 === 2 ? .7 : 1), 4 * s); }
+      else { g.fillStyle = "#B4AC9C"; for (let c = 0; c < 3; c++) for (let k = 0; k < 7; k++) g.fillRect(x0 + c * (x1 - x0) / 3, by + k * bh * .12, (x1 - x0) / 3 - 12 * s, 4 * s); }
+    }
+    if (dim) { g.fillStyle = `rgba(11,12,15,${dim})`; g.fillRect(-pw / 2 - 2, -ph / 2 - 30 * s, pw + 4, ph + 32 * s); }
+    g.restore();
+  };
+  for (let k = Math.max(0, idx - 3); k < idx; k++) page(A.shots[k], ((k * 37) % 7 - 3) * .05, .9, .55);
+  const e = Math.min(1, t / .85), ee = 1 - Math.pow(1 - e, 3), rot = (1 - ee) * Math.PI * 4 + ((idx * 37) % 7 - 3) * .02, sc = (.08 + .92 * ee) * (1 + Math.max(0, t - .85) * .015);
+  page(sh, rot, sc, 0);
+  if (t > .85 && t < .95) st.shake = .25;
+  vign(g, W, H, "rgba(0,0,0,A)", .55);
+};
+function actQ(q, st, A, sh) {
+  const box = actEl.querySelector(".act-q"), axis = q.type === "lane" ? ["U", "D"] : ["L", "R"], arrow = { U: "↑", D: "↓", L: "←", R: "→" };
+  if (q.type === "lane") q.want = A.lane === 1 ? "U" : "D"; if (q.type === "dir") q.want = q.k;
+  const lab = { lane: "变道！", dir: "闪开！", tap: q.label || "现在！", mash: "狂点挣脱！", sneak: q.label || "前进", dial: "停" }[q.type];
+  box.innerHTML = (q.type === "lane" || q.type === "dir") ? `<p class="qp">${arrow[q.want]} ${lab}</p><div class="qb">${axis.map(k => `<button type="button" data-k="${k}" class="${k === q.want ? "hot" : ""}">${arrow[k]}</button>`).join("")}</div><i class="qt"><b></b></i>`
+    : `<p class="qp" data-s>${q.type === "sneak" ? (q.txt ? q.txt[0] : "趁他不看，往前走") : q.type === "dial" ? "对准金色刻度" : lab}</p><div class="qb"><button type="button" data-k="T" class="hot wide">${lab}</button></div><i class="qt"><b></b></i>`;
+  box.hidden = false;
+  const press = k => { if (!q.live) return; const T = st.now;
+    if (q.type === "lane" || q.type === "dir") { if (axis.includes(k)) q.res(k === q.want); return; } if (k !== "T") return;
+    if (q.type === "tap") q.res(true);
+    else if (q.type === "mash") { q.c = (q.c || 0) + 1; Music.sfx("punch"); if (q.c >= q.n) q.res(true); }
+    else if (q.type === "sneak") { if (st.look) { q.res(false); return; } A.from = A.pos || 0; A.pos = A.from + 1; st.wt = T; Music.sfx(q.stepSfx || "paper"); if (A.pos >= q.n) setTimeout(() => q.res(true), 600); }
+    else if (q.type === "dial") { const D = st.dl; if (st.dialOff < .26) { D.got.push(Math.round(((D.tg / (Math.PI * 2)) * 100) % 100)); Music.sfx("click"); D.dir *= -1; D.tg = (D.tg + 1.5 + Math.random() * 3) % (Math.PI * 2); if (D.got.length >= q.n) q.res(true); } else { q.miss = (q.miss || 0) + 1; Music.sfx("buzz"); if (q.miss >= 3) q.res(false); } } };
+  box.querySelectorAll("button").forEach(b => b.onpointerdown = e => { e.preventDefault(); press(b.dataset.k); });
+  actKey = e => { const m = { ArrowUp: "U", w: "U", W: "U", ArrowDown: "D", s: "D", S: "D", ArrowLeft: "L", a: "L", A: "L", ArrowRight: "R", d: "R", D: "R", " ": "T", Enter: "T" }[e.key]; if (m) { e.preventDefault(); e.stopPropagation(); press(q.type === "lane" || q.type === "dir" ? m : "T"); } };
+}
+function playAct(id) {
+  return new Promise(done => {
+    const A = ACTS[id], tok = ++actTok, prev = Music.cur; A.lane = 1; A.cache = {}; A.ex = []; A.T = 0; A.x = 0; A.pos = 0; A.from = 0; A.down = []; A.shotN = 0; A.lk = null; A.hbT = 0; A.stepT = 0;
+    actEl.hidden = false; box.classList.add("off"); hideNpc(); clearProps(); $("#place").classList.remove("on");
+    actEl.querySelector(".act-tag").textContent = A.tag; if (A.music !== "keep") Music.play(A.music || "action");
+    const d = sizeCanvas(actC); let fails = 0, skip = false, i = -1, st = null, last = performance.now();
+    const cap = actEl.querySelector(".act-cap"), qb = actEl.querySelector(".act-q");
+    const finish = ok => { actEl.hidden = true; qb.hidden = true; actKey = null; if (A.music !== "keep") Music.play(prev); done(ok); };
+    actEl.querySelector(".act-skip").onclick = e => { e.stopPropagation(); skip = true; };
+    const next = () => { i++; if (skip || i >= A.shots.length) return finish(skip || fails < (A.lives || 2));
+      const sh = A.shots[i]; st = { t: 0, dt: 0, now: 0 }; cap.textContent = sh.cap || ""; cap.classList.remove("on"); void cap.offsetWidth; cap.classList.add("on"); qb.hidden = true; actKey = null;
+      if (sh.r === "road" && !sh.noEngine) Music.sfx("engine"); if (sh.r === "news") { Music.sfx("whoosh"); setTimeout(() => Music.sfx(sh.kind === "file" ? "paper" : sh.kind === "award" ? "medal" : "stamp"), 850); } };
+    next();
+    const loop = now => {
+      if (tok !== actTok) return;
+      const dt = Math.min(.05, (now - last) / 1000); last = now; st.dt = dt; st.t += dt; st.now = st.t; A.T += dt;
+      const sh = A.shots[i], t = st.t, W = actC.width, H = actC.height, g = actG;
+      if (sh.q && !st.q && t >= (sh.q.at || 0)) { const q = st.q = Object.assign({ live: true, t0: t, win: sh.q.win, n: sh.q.n }, sh.q); q.lane = A.lane;
+        q.res = ok => { if (!q.live) return; q.live = false; q.done = true; q.ok = ok; q.rt = st.t; if (!ok) fails++; qb.hidden = true; actKey = null;
+          if (sh.r === "road") { if (ok) { st.from = A.lane; A.lane = 1 - A.lane; st.lc = st.t; Music.sfx("skid"); } else Music.sfx("crash"); } else if (sh.r === "fight") Music.sfx("punch"); else if (sh.r === "gun" && ok) Music.sfx("shot"); else if (!ok && sh.r === "sneak") Music.sfx("buzz"); };
+        if (q.sfx) Music.sfx(q.sfx); actQ(q, st, A, sh); }
+      if (st.q && st.q.live) { const k = 1 - (t - st.q.t0) / st.q.win, bar = qb.querySelector(".qt b"); if (bar) bar.style.transform = `scaleX(${Math.max(0, k)})`; const ps = qb.querySelector("[data-s]"); if (ps && st.q.type === "sneak") { const tx = st.q.txt || ["他没在看，走", "他要转身了……", "别动！他在看"]; ps.textContent = st.look ? tx[2] : st.warn ? tx[1] : tx[0]; ps.className = "qp" + (st.look ? " bad" : ""); } if (k <= 0) st.q.res(false); }
+      g.save(); if (st.shake && !reduced()) { g.translate((Math.random() - .5) * 18 * st.shake, (Math.random() - .5) * 18 * st.shake); st.shake = Math.max(0, st.shake - dt * 2.5); }
+      AR[sh.r](g, W, H, t, sh, st, A); g.restore();
+      const end = sh.q ? (st.q && st.q.done ? st.q.rt + (sh.after || 1.2) : Infinity) : sh.d;
+      if (skip || t >= end) next();
+      if (!actEl.hidden) requestAnimationFrame(loop);
+    };
+    requestAnimationFrame(loop);
+  });
+}
+
+
+/* ================= 配音 =================
+   1) 优先播放录音：voice/O1.mp3 这样按台词编号命名的文件（或 ART.voice 里指定的文件）；某句没有录音就只有这一句改用朗读
+   2) 没有录音时，只用设备上的中文男声朗读，按"成熟度"挑选；找不到男声就不配音，绝不用女声顶替 */
+const Voice = (() => {
+  const synth = window.speechSynthesis, DIR = "voice/";
+  let on = true, voices = [], cast = {}, audio = null, token = 0, missing = new Set(), warned = false;
+  try { on = store.get("philby-voice") !== "off"; } catch (e) { }
+  /* 越靠前越成熟：云扬（新闻播音）、云健（低沉）、云泽（年长）……云希偏年轻放后面 */
+  const MALE = [/yunyang/i, /yunjian/i, /yunze/i, /yunfeng/i, /yunhao/i, /yunye/i, /li-?mu/i, /\bhan\b/i, /kangkang/i, /zhiwei/i, /yunjhe/i, /yunxi(?!a)/i];
+  const GOOD = /natural|online|neural|premium|enhanced|增强|高品质/i;
+  function load() { if (!synth) return; voices = synth.getVoices().filter(v => /^(zh|cmn)/i.test(v.lang)); cast = {}; }
+  if (synth) { load(); try { synth.addEventListener("voiceschanged", load); } catch (e) { synth.onvoiceschanged = load; } }
+  const rank = v => { const k = MALE.findIndex(r => r.test(v.name)); return k < 0 ? -1 : (100 - k * 5) + (GOOD.test(v.name) ? 30 : 0) + (/CN|Hans/i.test(v.lang) ? 10 : 0); };
+  const males = () => voices.filter(v => rank(v) >= 0).sort((a, b) => rank(b) - rank(a));
+  /* 每个角色：音调略低、语速略慢，听起来更沉稳；幅度很小，避免机器感 */
+  const ROLE = { "奥托": { p: .88, r: .88, slot: 1 }, "尼古拉斯·埃利奥特": { p: .92, r: .9, slot: 0 }, "盖伊·伯吉斯": { p: .95, r: .98, slot: 2 }, "记者": { p: 1, r: 1.08, slot: 3 }, "沃罗宁上校": { p: .82, r: .86, slot: 1 } };
+  function pick(role) {
+    if (cast[role]) return cast[role];
+    const m = males(); if (!m.length) return null;
+    const b = ROLE[role] || { p: .92, r: .92, slot: 0 }, v = m[b.slot % m.length];
+    const reuse = Object.values(cast).filter(c => c && c.v === v).length;
+    return (cast[role] = { v, p: Math.max(.75, b.p - reuse * .04), r: b.r });
+  }
+  const clean = t => t.replace(/[「」『』“”"]/g, "").replace(/……|…/g, "，").replace(/——/g, "，");
+  function tts(role, text, done) {
+    if (!synth) return false; const c = pick(role);
+    if (!c) { if (!warned) { warned = true; toast("你的设备没有中文男声，没有录音的台词将不配音。"); } return false; }
+    const u = new SpeechSynthesisUtterance(clean(text)); u.voice = c.v; u.lang = c.v.lang; u.pitch = c.p; u.rate = c.r; u.volume = 1;
+    u.onend = done; u.onerror = done; Music.duck(true); synth.speak(u); return true;
+  }
+  return {
+    get on() { return on; },
+    hasMale() { return males().length > 0; },
+    toggle() { on = !on; store.set("philby-voice", on ? "on" : "off"); if (!on) this.stop(); return on; },
+    warm() { if (!synth) return; try { const u = new SpeechSynthesisUtterance(" "); u.volume = 0; synth.speak(u); } catch (e) { } },
+    speak(role, text, id, onend) {
+      this.stop(); if (!on) return false;
+      const my = ++token, done = () => { if (my !== token) return; Music.duck(false); onend && onend(); };
+      const src = (ART.voice && ART.voice[id]) || (!id || missing.has(id) ? "" : DIR + id + ".mp3");
+      if (src) {
+        audio = new Audio(src); audio.preload = "auto";
+        audio.onended = done;
+        audio.onerror = () => { if (my !== token) return; missing.add(id); audio = null; if (!tts(role, text, done)) done(); };
+        Music.duck(true); audio.play().catch(() => { });
+        return true;
+      }
+      return tts(role, text, done);
+    },
+    stop() { token++; if (synth) synth.cancel(); if (audio) { audio.pause(); audio = null; } Music.duck(false); }
+  };
+})();
+function toast(msg) {
+  let t = $("#toast"); if (!t) { t = document.createElement("div"); t.id = "toast"; t.setAttribute("role", "status"); $("#game").appendChild(t); }
+  t.textContent = msg; t.classList.remove("on"); void t.offsetWidth; t.classList.add("on");
+}
+
+/* ================= 引擎 ================= */
+const LABELS = {}; SCRIPT.forEach((c, i) => { if (c.label) LABELS[c.label] = i; });
+const box = $("#box"), nameEl = $("#name"), textEl = $("#text"), moreEl = $("#more");
+let runId = 0, waiter = null, typing = null, auto = false, autoT = null, vars = {}, picks = [], logItems = [];
+
+function veil(on) { $("#veil").style.opacity = on ? 1 : 0; }
+async function setBg(name, place) {
+  const pl = $("#place"); pl.classList.remove("on");
+  veil(true); Music.play(BG_TRACK[name]); await sleep(reduced() ? 50 : 600); clearProps(); $("#rainfx").classList.remove("on"); camMove("reset"); useBg(name); await sleep(150); veil(false); await sleep(reduced() ? 50 : 500);
+  if (place) { pl.textContent = place; pl.classList.add("on"); }
+}
+function meter(bump) {
+  const n = Math.max(0, Math.min(5, vars.sus || 0)); document.querySelectorAll("#meter i").forEach((el, i) => el.classList.toggle("on", i < n));
+  const m = $("#meter"); m.title = `怀疑值 ${n} / 5`; if (bump) { m.classList.remove("bump"); void m.offsetWidth; m.classList.add("bump"); }
+}
+let speaking = false;
+function say(name, text, self, id) {
+  return new Promise(res => {
+    speaking = false;
+    if (name && !self) speaking = Voice.speak(name, text, id, () => { speaking = false; if (auto && !typing && waiter) autoT = setTimeout(advance, 600); });
+    box.classList.remove("off"); box.classList.toggle("narr", !name && !self); box.classList.toggle("self", !!self);
+    nameEl.hidden = !name && !self; nameEl.textContent = self ? "你（菲尔比）" : (name || "");
+    if (npcEl.classList.contains("on")) npcEl.classList.toggle("listen", !name);
+    logItems.push({ name: self ? "你（菲尔比）" : name, text });
+    moreEl.classList.remove("on"); textEl.textContent = "";
+    let i = 0; const chars = [...text];
+    const end = () => { clearInterval(typing); typing = null; textEl.textContent = text; moreEl.classList.add("on"); if (auto && !speaking) autoT = setTimeout(advance, 900 + chars.length * 55); };
+    if (reduced()) end(); else typing = setInterval(() => { i++; if (i % 2 && !speaking) Music.sfx("key"); textEl.textContent = chars.slice(0, i).join(""); if (i >= chars.length) end(); }, 36);
+    waiter = () => { clearTimeout(autoT); waiter = null; Voice.stop(); speaking = false; res(); };
+  });
+}
+function overlayOpen() { return ["choices", "chap", "card", "act"].some(id => !$("#" + id).hidden); }
+function advance() {
+  if (overlayOpen()) return;
+  if (typing) { const full = logItems[logItems.length - 1].text; clearInterval(typing); typing = null; textEl.textContent = full; moreEl.classList.add("on"); if (auto) autoT = setTimeout(advance, 900 + full.length * 55); return; }
+  if (waiter) waiter();
+}
+function overlay(id, html) {
+  return new Promise(res => {
+    const el = $("#" + id); el.innerHTML = html; el.hidden = false; box.classList.add("off");
+    if (id === "card") setTimeout(() => Music.sfx("stamp"), 220); if (id === "chap") Music.sfx("chap");
+    const close = () => { el.hidden = true; el.onclick = null; window.onOverlayKey = null; res(); };
+    setTimeout(() => { el.onclick = close; window.onOverlayKey = close; }, 400);
+  });
+}
+function choose(c) {
+  return new Promise(res => {
+    const el = $("#choices");
+    const order = c.opts.map((_, i) => i); for (let k = order.length - 1; k > 0; k--) { const j = Math.floor(Math.random() * (k + 1)); [order[k], order[j]] = [order[j], order[k]]; }
+    el.innerHTML = `<p class="ch-q">${esc(c.q)}</p><p class="ch-t">${esc(c.h)}</p>` + order.map((oi, i) => `<button class="ch" type="button" data-i="${oi}"><b>${String.fromCharCode(65 + i)}</b><span>${esc(c.opts[oi].t)}</span></button>`).join("");
+    el.hidden = false; box.classList.add("off"); clearTimeout(autoT);
+    const pick = i => { Music.sfx("pick"); if (document.activeElement) document.activeElement.blur(); el.hidden = true; el.onclick = null; window.onChoiceKey = null; res(c.opts[i]); };
+    el.onclick = e => { const b = e.target.closest(".ch"); if (b) pick(+b.dataset.i); };
+    window.onChoiceKey = k => { if (k >= 1 && k <= c.opts.length) pick(order[k - 1]); };
+  });
+}
+let runCks = [];
+function loadCks() { try { return JSON.parse(store.get("philby-cks") || "{}"); } catch (e) { return {}; } }
+function saveCk(idx, c) {
+  const ck = { idx, y: c.chap, t: c.title.replace(/\s/g, ""), line: vars.line || "H", vars: JSON.parse(JSON.stringify(vars)), picks: JSON.parse(JSON.stringify(picks)) };
+  runCks = runCks.filter(x => x.y !== ck.y); runCks.push(ck);
+  const all = loadCks(); all[ck.line + ck.y] = ck; store.set("philby-cks", JSON.stringify(all)); refreshCkBtn();
+}
+function ckBtn(ck) { return `<button type="button" class="ck ${ck.line.toLowerCase()}" data-ck="${ck.line + ck.y}"><b>${ck.y}</b>${esc(ck.t)}${ck.y !== "1934" && ck.y !== "1945" ? ` · ${LINES[ck.line].short}线` : ""}</button>`; }
+function refreshCkBtn() { $("#bChapters").hidden = !Object.keys(loadCks()).length; }
+function openChapters() {
+  const all = loadCks(), list = Object.values(all), byY = (a, b) => a.y - b.y;
+  const common = list.filter(c => c.y === "1934" || c.y === "1945").sort(byY);
+  const groups = [["开头（三条线共用）", common]].concat(["H", "S", "D"].map(l => [LINES[l].name, list.filter(c => c.line === l && c.y !== "1934" && c.y !== "1945").sort(byY)]));
+  $("#ckList").innerHTML = groups.filter(g => g[1].length).map(([n, cs]) => `<div class="ck-g"><h3>${n}</h3><div class="ck-row">${cs.map(ckBtn).join("")}</div></div>`).join("") || "<p class='lead'>还没有玩过的章节。</p>";
+  $("#ckSheet").hidden = false;
+}
+function restartFrom(key) {
+  const ck = loadCks()[key] || runCks.find(x => x.line + x.y === key); if (!ck) return;
+  ["title", "ending", "info", "logSheet", "ckSheet"].forEach(id => $("#" + id).hidden = true); resetOverlays();
+  Music.unlock(); syncMusicBtn(); Voice.warm();
+  vars = JSON.parse(JSON.stringify(ck.vars)); picks = JSON.parse(JSON.stringify(ck.picks)); logItems = [];
+  runCks = runCks.filter(x => +x.y < +ck.y);
+  hideNpc(); box.classList.add("off"); meter(false); $("#hud").hidden = false; run(ck.idx);
+}
+document.addEventListener("click", e => { const b = e.target.closest("[data-ck]"); if (b) { e.stopPropagation(); restartFrom(b.dataset.ck); } }, true);
+async function run(from) {
+  const my = ++runId; let i = typeof from === "number" ? from : (LABELS[from] || 0);
+  while (i < SCRIPT.length) {
+    if (my !== runId) return;
+    const c = SCRIPT[i++];
+    if (c.label) continue;
+    if (c.chap) { saveCk(i - 1, c); clearProps(); hideNpc(); $("#place").classList.remove("on"); await overlay("chap", `<p class="cp-y">${c.chap}</p><p class="cp-p">${esc(c.place)}</p><p class="cp-t">${esc(c.title)}</p><p class="cp-n">点击继续</p>`); continue; }
+    if (c.bg) { await setBg(c.bg, c.place); continue; }
+    if (c.show) { showNpc(c.show); await sleep(350); continue; }
+    if (c.hide) { hideNpc(); await sleep(300); continue; }
+    if (c.n || c.s || c.me) { clearProps(); if (!(c.fx && c.fx.cam)) camMove(); cue(c.fx); await say(c.s || "", c.t || c.n || c.me, !!c.me, c.v || ""); continue; }
+    if ("card" in c) { clearProps();
+      const src = c.card && ART.photo[c.card];
+      const ph = c.card ? `<figure class="doc-ph${src ? "" : " drawn"}">${src ? `<img src="${esc(src)}" alt="${esc(c.ph || "")}">` : `<canvas width="640" height="360" data-ph="${c.card}" role="img" aria-label="画面重现：${esc(PHOTO_CAP[c.card] || "")}"></canvas>`}<figcaption>${src ? esc(c.ph || "") : `${esc(PHOTO_CAP[c.card] || "")} · 画面重现，非原始照片`}</figcaption></figure>` : "";
+      logItems.push({ name: c.loop ? "绕回历史" : c.alt ? "改写" : "历史档案", text: c.t });
+      const cardP = overlay("card", `<article class="doc${c.alt ? " alt" : ""}${c.loop ? " loop" : ""}"><p class="doc-k"><span>${c.loop ? "BACK ON RECORD" : c.alt ? "ALTERNATE HISTORY" : "DECLASSIFIED"}</span><span>${c.loop ? "绕回历史" : c.alt ? "改写的历史" : "历史上"}</span></p><span class="stamp">${esc(c.stamp)}</span><h3 class="doc-h">${esc(c.h)}</h3><p class="doc-p">${esc(c.t)}</p>${ph}<p class="doc-f">点击继续</p></article>`);
+      const pc = $("#card canvas[data-ph]"); if (pc) drawPhoto(pc.dataset.ph, pc);
+      await cardP;
+      continue;
+    }
+    if (c.choice) {
+      const o = await choose(c); if (my !== runId) return;
+      if (o.line) vars.line = o.line;
+      if (!c.sub) picks.push({ y: c.choice, hist: !!o.hist, line: c.line || o.line || "" });
+      if (o.set) Object.assign(vars, o.set);
+      if (o.fx) { clearProps(); cue(o.fx); await sleep(reduced() ? 600 : (o.fx.map ? (o.fx.slow ? 3900 : 2300) : o.fx.skip ? 2000 : 1800)); if (my !== runId) return; }
+      if (o.sus) { vars.sus = Math.max(0, (vars.sus || 0) + o.sus); meter(true); if (o.sus > 0) setTimeout(() => Music.sfx("sus"), 250); }
+      logItems.push({ pick: o.t }); i = LABELS[o.go]; continue;
+    }
+    if (c.loop) { const p = picks.find(x => x.y === c.loop); if (p) p.loop = true; continue; }
+    if (c.go) { i = LABELS[c.go]; continue; }
+    if (c.set) { Object.assign(vars, c.set); continue; }
+    if (c.act) { Voice.stop(); const ok = await playAct(c.act); if (my !== runId) return; logItems.push({ name: ACTS[c.act].tag, text: ACTS[c.act].log + (ACTS[c.act].lives > 2 ? "" : ok ? "（成功）" : "（失败）") });
+      if (!ok && c.loseSus) { vars.sus = (vars.sus || 0) + c.loseSus; meter(true); Music.sfx("sus"); }
+      if (ok && c.win) i = LABELS[c.win]; else if (!ok && c.lose) i = LABELS[c.lose]; continue; }
+    if (c.if) { const ok = Object.entries(c.if).every(([k, v]) => (vars[k] || 0) >= v); i = LABELS[ok ? c.then : c.else]; continue; }
+    if (c.end) { await sleep(300); showEnding(c); return; }
+  }
+}
+function gotEndings() { try { return JSON.parse(store.get("philby-endings") || "[]"); } catch (e) { return []; } }
+function refreshGot() { const got = new Set(gotEndings()), n = ALL_ENDS.filter(e => got.has(e)).length;
+  $("#gotN").textContent = n; $("#gotN2").textContent = n; document.querySelectorAll(".gotOf").forEach(el => el.textContent = ALL_ENDS.length);
+  $("#gotLines").innerHTML = Object.values(LINES).map(l => `<span>${l.name} <b>${l.codes.filter(e => got.has(e)).length}</b> / ${l.codes.length}</span>`).join(""); }
+function showEnding(c) { clearProps();
+  box.classList.add("off"); hideNpc(); auto = false; $("#bAuto").setAttribute("aria-pressed", "false");
+  Music.play(c.music || (c.end === "H" || c.end === "A6" ? "endH" : "endA"));
+  const got = new Set(gotEndings()); got.add(c.end); store.set("philby-endings", JSON.stringify([...got]));
+  const loops = picks.filter(p => p.loop).length;
+  const k = $("#endK"); k.textContent = c.end === "H" && loops ? "历史结局 · 绕回" : c.kind; k.classList.toggle("alt", c.end !== "H");
+  $("#endT").textContent = c.title;
+  $("#endD").textContent = c.end === "H" && loops ? `你偏离过 ${loops} 次，但每一次都把自己拉回了历史的轨道。三十年里，他骗过了几乎所有信任他的人，最后在莫斯科度过余生。` : c.desc;
+  $("#loopN").textContent = loops;
+  $("#hitN").textContent = picks.filter(p => p.hist).length; $("#hitOf").textContent = CHAPTERS.length;
+  $("#route").innerHTML = CHAPTERS.map((y, ci) => { const p = picks.find(x => x.y === y); const cls = p ? (p.hist ? " h" : p.line ? " " + p.line.toLowerCase() : p.loop ? " l" : " a") : "", lab = p ? (p.hist ? " · 史实" : p.line ? " · " + LINES[p.line].short + (p.loop ? " · 绕回" : "") : p.loop ? " · 绕回" : " · 改写") : ""; return `${ci ? '<span class="arrow">→</span>' : ""}<span class="node${cls}">${y}${lab}</span>`; }).join("");
+  const ln = c.line || "H"; $("#endLine").textContent = LINES[ln].name; $("#endLine").className = "end-line " + ln.toLowerCase();
+  $("#endCks").innerHTML = runCks.length ? `<h3>从这一局的某一章重新开始</h3><div class="ck-row">${runCks.slice().sort((a, b) => a.y - b.y).map(ckBtn).join("")}</div>` : "";
+  refreshGot(); $("#hud").hidden = true; $("#ending").hidden = false;
+}
+function resetOverlays() { actTok++; actKey = null; $("#act").hidden = true; Voice.stop(); clearProps(); $("#rainfx").classList.remove("on"); camMove("reset"); ["choices", "chap", "card"].forEach(id => { $("#" + id).hidden = true; $("#" + id).onclick = null; }); window.onOverlayKey = null; window.onChoiceKey = null; }
+function startGame() {
+  ["title", "ending", "info", "logSheet", "ckSheet"].forEach(id => $("#" + id).hidden = true); resetOverlays();
+  Music.unlock(); syncMusicBtn(); Voice.warm();
+  vars = { sus: 0 }; picks = []; logItems = []; runCks = []; hideNpc(); box.classList.add("off"); meter(false);
+  $("#hud").hidden = false; run("start");
+}
+function toTitle() {
+  runId++; clearTimeout(autoT); clearInterval(typing); typing = null; waiter = null; resetOverlays();
+  box.classList.add("off"); hideNpc(); $("#hud").hidden = true; ["ending", "info", "logSheet", "ckSheet"].forEach(id => $("#" + id).hidden = true);
+  $("#place").classList.remove("on"); useBg("park"); refreshGot(); $("#title").hidden = false; Music.play("theme");
+}
+function openLog() {
+  $("#logList").innerHTML = logItems.map(x => x.pick ? `<li class="pick">你选择了：${esc(x.pick)}</li>` : `<li>${x.name ? `<span class="who">${esc(x.name)}</span>${esc(x.text)}` : `<span class="nar">${esc(x.text)}</span>`}</li>`).join("") || "<li class='nar'>还没有记录。</li>";
+  $("#logSheet").hidden = false;
+}
+$("#game").addEventListener("click", e => { if (e.target.closest("button, .sheet, #choices, #chap, #card, #act")) return; advance(); });
+document.addEventListener("keydown", e => {
+  if (actKey && !$("#act").hidden) { actKey(e); return; }
+  if (!$("#act").hidden) return;
+  if (!$("#choices").hidden && window.onChoiceKey) { const k = parseInt(e.key, 10) || ("abcd".indexOf(e.key.toLowerCase()) + 1); if (k > 0) { window.onChoiceKey(k); return; } }
+  if (e.key === "Escape") { ["info", "logSheet", "ckSheet"].forEach(id => $("#" + id).hidden = true); return; }
+  if (!$("#title").hidden || !$("#ending").hidden || !$("#info").hidden || !$("#logSheet").hidden || !$("#ckSheet").hidden) return;
+  if (e.key === " " || e.key === "Enter") {
+    if (e.target.closest && e.target.closest("button")) return;
+    e.preventDefault();
+    if ((!$("#chap").hidden || !$("#card").hidden) && window.onOverlayKey) { window.onOverlayKey(); return; }
+    advance();
+  }
+});
+$("#bStart").onclick = e => { e.currentTarget.blur(); startGame(); }; $("#bAgain").onclick = e => { e.currentTarget.blur(); startGame(); };
+$("#bHome").onclick = toTitle; $("#bChapters").onclick = e => { e.currentTarget.blur(); openChapters(); }; $("#bTitle").onclick = toTitle;
+$("#bLog").onclick = openLog;
+document.querySelectorAll("[data-close]").forEach(b => b.onclick = () => $("#" + b.dataset.close).hidden = true);
+$("#bAuto").onclick = () => { auto = !auto; $("#bAuto").setAttribute("aria-pressed", String(auto)); if (auto && !typing && waiter) autoT = setTimeout(advance, 900); else clearTimeout(autoT); };
+function syncMusicBtn() { $("#bMusic").setAttribute("aria-pressed", String(Music.on)); $("#bMusic").textContent = Music.on ? "音乐 开" : "音乐 关"; }
+$("#bMusic").onclick = e => { e.currentTarget.blur(); Music.unlock(); Music.toggle(); syncMusicBtn(); };
+syncMusicBtn();
+function syncVoiceBtn() { $("#bVoice").setAttribute("aria-pressed", String(Voice.on)); $("#bVoice").textContent = Voice.on ? "配音 开" : "配音 关"; }
+$("#bVoice").onclick = e => { e.currentTarget.blur(); Voice.toggle(); syncVoiceBtn(); };
+syncVoiceBtn();
+useBg("park"); refreshGot(); refreshCkBtn();
+</script>
+
+</body>
+</html>
